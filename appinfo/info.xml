@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>timesheet</id>
+	<name>Arbeitszeitnachweis</name>
+	<summary>Zeiterfassung für Mitarbeitende und HR-Übersicht</summary>
+	<description>Erfassen, prüfen und überblicken von Arbeitszeiten direkt in Nextcloud.</description>
+	<version>1.0.0</version>
+
+	<licence>agpl</licence>
+
+	<author mail="dgu@xiller.com">David Gun</author>
+	<category>tools</category>
+
+	<bugs>https://test.com/</bugs>
+
+	<dependencies>
+		<php min-version="8.2"/>
+		<nextcloud min-version="30" max-version="33"/>
+	</dependencies>
+
+	<navigations>
+    <navigation>
+      <id>timesheet</id>
+      <name>Arbeitszeit</name>
+      <route>timesheet.page.index</route>
+      <order>10</order>
+      <icon>timesheet.png</icon>
+      <type>link</type>
+    </navigation>
+  </navigations>
+</info>
