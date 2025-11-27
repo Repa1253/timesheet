@@ -1,25 +1,2 @@
-# Time Sheet
-
-A template to get started with Nextcloud app development.
-
-## Usage
-
-- To get started easily use the [Appstore App generator](https://apps.nextcloud.com/developer/apps/generate) to
-  dynamically generate an App based on this repository with all the constants prefilled.
-- Alternatively you can use the "Use this template" button on the top of this page to create a new repository based on
-  this repository. Afterwards adjust all the necessary constants like App ID, namespace, descriptions etc.
-
-Once your app is ready follow the [instructions](https://nextcloudappstore.readthedocs.io/en/latest/developer.html) to
-upload it to the Appstore.
-
-## Resources
-
-### Documentation for developers:
-
-- General documentation and tutorials: https://nextcloud.com/developer
-- Technical documentation: https://docs.nextcloud.com/server/latest/developer_manual
-
-### Help for developers:
-
-- Official community chat: https://cloud.nextcloud.com/call/xs25tz5y
-- Official community forum: https://help.nextcloud.com/c/dev/11
+zip: tar -czf timesheet-1.0.0.tar.gz --exclude-vcs timesheet/
+sign: sudo openssl dgst -sha512 -sign ~/nextcloud-docker-dev/data/appa-extra/timesheet.key ~/nextcloud-docker-dev/data/appa-extra/timesheet-1.0.0.tar.gz | openssl base64
