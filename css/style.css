@@ -30,7 +30,7 @@
 
 #hr-user-table th,
 #hr-user-table td {
-  height: 20px;
+  height: 22px;
 }
 
 #ts-table tbody td:nth-child(9),
@@ -113,11 +113,10 @@
 .hr-userlist button.hr-load-user {
   padding: 4px 10px;
   border: 1px solid var(--color-border, #ccc);
-  border-radius: 4px;
   background: #ddd;
-  cursor: pointer;
   color: #000;
   margin: 0;
+  width: 100%;
 }
 
 .hr-userlist button.hr-load-user:hover {
@@ -179,8 +178,8 @@
 
 /* Tabs */
 .ts-tabs .ts-tab {
-  background: #e5e7eb;
-  color: #111111;
+  background: var(--color-background-dark, #f6f8fa);
+  color: #ffffff;
   border: 1px solid #9ca3af;
   border-radius: 6px;
   padding: 0px 5px;
@@ -189,8 +188,6 @@
 
 .ts-tabs .ts-tab.active {
   background: #374151;
-  color: #ffffff;
-  border-color: #111827;
 }
 
 .ts-tabview {
@@ -202,8 +199,16 @@
 }
 
 /* HR Ansicht */
-.ts-hr-section {
-  margin-bottom: 2rem;
+#hr-userlist-section {
+  background: var(--color-background-dark, #f6f8fa);
+  border: 1px solid var(--color-border, #d0d7de);
+  border-radius: 6px;
+  width: fit-content;
+}
+
+#hr-userlist-section h4 {
+  margin: 0 5px 8px;
+  font-weight: 700;
 }
 
 .hr-back-button {
@@ -223,7 +228,20 @@
 .hr-user-header-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+}
+
+.hr-user-header-bar h4 {
+  margin: 0;
+  background: var(--color-background-dark, #f6f8fa);
+  border: 1px solid var(--color-border, #d0d7de);
+  border-radius: 6px;
+  padding: 0 10px;
+}
+
+.hr-user-header-bar button {
+  background: var(--color-background-dark, #f6f8fa);
+  padding: 4px 10px;
 }
 
 .hr-user-controls-row {
@@ -305,8 +323,8 @@
   background: var(--color-background-dark, #f6f8fa);
   border: 1px solid var(--color-border, #d0d7de);
   border-radius: 6px;
-  padding: 6px 10px;
-  margin-bottom: 8px;
+  padding: 0px 5px;
+  margin-bottom: 6px;
 }
 
 /* Buttons innerhalb der Kopfbereiche: klarer Kontrast */

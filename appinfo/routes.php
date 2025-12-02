@@ -19,5 +19,8 @@ return [
     ['name' => 'config#setUserConfig', 'url' => '/api/hr/config/{userId}', 'verb' => 'PUT'],
 
     ['name' => 'holiday#getHolidays', 'url' => '/api/holidays', 'verb' => 'GET'],
+
+    // Admin settings
+    ['name' => 'settings#saveAdmin', 'url' => '/admin/settings', 'verb' => 'POST'],
   ],
 ];

@@ -79,7 +79,7 @@
     <div id="tab-hr" class="ts-tabview">
 
       <!-- Mitarbeitende -->
-      <div class="ts-hr-section">
+      <div id="hr-userlist-section" class="ts-hr-section">
         <h4>Mitarbeitende</h4>
         <table class="grid hr-userlist">
           <thead>

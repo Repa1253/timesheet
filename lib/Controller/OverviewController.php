@@ -13,20 +13,28 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\Timesheet\Db\EntryMapper;
 use OCA\Timesheet\Db\UserConfigMapper;
+use OCP\AppFramework\Services\IAppConfig;
 
 class OverviewController extends Controller {
 
-  private const HR_GROUPS = ['xi-HR', 'xi-Master', 'sk-Master', 'op-Master', 'op-HR', 'sk-HR'];
+  /** @var string[] */
+  private array $hrGroups;
+  private string $hrUserGroup;
 
   public function __construct(
     string $appName,
     IRequest $request,
+    IAppConfig $appConfig,
     private EntryMapper $entryMapper,
     private UserConfigMapper $userConfigMapper,
     private IGroupManager $groupManager,
     private IUserSession $userSession
   ) {
     parent::__construct($appName, $request);
+
+    $raw = $appConfig->getAppValueString('hr_groups');
+    $this->hrGroups = array_filter(array_map('trim', explode(',', $raw)));
+    $this->hrUserGroup = $appConfig->getAppValueString('hr_user_group');
   }
 
   private function isHr(): bool {
@@ -34,7 +42,7 @@ class OverviewController extends Controller {
     if (!$user) return false;
     
     $uid = $user->getUID();
-    foreach (self::HR_GROUPS as $group) {
+    foreach ($this->hrGroups as $group) {
       if ($this->groupManager->isInGroup($uid, $group)) return true;
     }
 
@@ -47,7 +55,7 @@ class OverviewController extends Controller {
       return new DataResponse([], 403);
     }
 
-    $group = $this->groupManager->get('Zeitnachweis');
+    $group = $this->groupManager->get($this->hrUserGroup);
     if (!$group) {
       return new DataResponse([], 404);
     }

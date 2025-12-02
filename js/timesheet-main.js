@@ -764,7 +764,7 @@
       if (hrDailyMinInput) hrDailyMinInput.value = minToHm(min);
       if (hrStateInput)    hrStateInput.value = state;
     } catch {
-      // If loading config failed, keep default 06:00 and empty state
+      // If loading config failed, keep default 08:00 and empty state
       if (hrDailyMinInput) hrDailyMinInput.value = '08:00';
       if (hrStateInput)    hrStateInput.value = '';
     }

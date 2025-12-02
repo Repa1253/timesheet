@@ -10,20 +10,26 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\IGroupManager;
+use OCP\IConfig;
 
 class EntryController extends Controller {
 
-  private const HR_GROUPS = ['xi-HR', 'xi-Master', 'sk-Master', 'op-Master', 'op-HR', 'sk-HR'];
+  /** @var string[] */
+  private array $hrGroups;
 
   public function __construct(
     string $appName,
     IRequest $request,
+    IConfig $config,
     private EntryMapper $mapper,
     private EntryService $service,
     private IUserSession $userSession,
     private IGroupManager $groupManager
   ) {
     parent::__construct($appName, $request);
+
+    $raw = $config->getAppValue('timesheet', 'hr_groups', 'HR');
+    $this->hrGroups = array_filter(array_map('trim', explode(',', $raw)));
   }
 
   private function isHr(): bool {
@@ -31,7 +37,7 @@ class EntryController extends Controller {
     if (!$user) return false;
     
     $uid = $user->getUID();
-    foreach (self::HR_GROUPS as $group) {
+    foreach ($this->hrGroups as $group) {
       if ($this->groupManager->isInGroup($uid, $group)) return true;
     }
 

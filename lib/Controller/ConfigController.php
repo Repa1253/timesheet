@@ -12,25 +12,32 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IDBConnection;
+use OCP\IConfig;
 
 class ConfigController extends Controller {
   private IGroupManager $groupManager;
   private IUserSession $userSession;
   private IDBConnection $db;
+  private IConfig $config;
 
-  private const HR_GROUPS = ['xi-HR', 'xi-Master', 'sk-Master', 'op-Master', 'op-HR', 'sk-HR'];
+  /** @var string[] */
+  private array $hrGroups;
 
   public function __construct(
     string $appName,
     IRequest $request,
     IGroupManager $groupManager,
     IUserSession $userSession,
-    IDBConnection $db
+    IDBConnection $db,
+    IConfig $config
   ) {
     parent::__construct($appName, $request);
     $this->groupManager = $groupManager;
     $this->userSession  = $userSession;
     $this->db           = $db;
+
+    $raw = $config->getAppValue('timesheet', 'hr_groups', 'HR');
+    $this->hrGroups = array_filter(array_map('trim', explode(',', $raw)));
   }
 
   /**
@@ -106,7 +113,7 @@ class ConfigController extends Controller {
 
     if ($currentUid === $targetUid) return;
 
-    foreach (self::HR_GROUPS as $group) {
+    foreach ($this->hrGroups as $group) {
       if ($this->groupManager->isInGroup($currentUid, $group)) return;
     }
     throw new \Exception("Access denied", Http::STATUS_FORBIDDEN);

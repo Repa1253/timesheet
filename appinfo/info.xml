@@ -5,7 +5,7 @@
 	<name>Arbeitszeitnachweis</name>
 	<summary>Zeiterfassung für Mitarbeitende und HR-Übersicht</summary>
 	<description>Erfassen, prüfen und überblicken von Arbeitszeiten direkt in Nextcloud.</description>
-	<version>1.0.2</version>
+	<version>1.0.3</version>
 
 	<licence>agpl</licence>
 
@@ -29,4 +29,9 @@
       <type>link</type>
     </navigation>
   </navigations>
+
+	<settings>
+		<admin>OCA\Timesheet\Settings\AdminSettings</admin>
+		<admin-section>OCA\Timesheet\Settings\AdminSection</admin-section>
+	</settings>
 </info>
