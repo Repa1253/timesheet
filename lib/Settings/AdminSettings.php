@@ -6,30 +6,31 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\Settings\ISettings;
 use OCP\Util;
-use OCP\IL10N;
+use OCP\IGroupManager;
 
 class AdminSettings implements ISettings {
 
   public function __construct(
-    private IL10N $l,
     private IAppConfig $appConfig,
+    private IGroupManager $groupManager,
+    private string $appName,
   ) {
   }
 
   public function getForm(): TemplateResponse {
-    $hrGroups = $this->appConfig->getAppValueString('hr_groups');
-    $hrUserGroup = $this->appConfig->getAppValueString('hr_user_group');
+    $allGroupsObj = $this->groupManager->search('');
+    $allGroups = array_map(fn($group) => $group->getGID(), $allGroupsObj);
 
-    Util::addScript('timesheet', 'admin');
+    $hrGroups = json_decode($this->appConfig->getAppValueString('hr_groups'), true);
+    $hrUserGroups = json_decode($this->appConfig->getAppValueString('hr_user_groups'), true);
+
+    Util::addScript($this->appName, 'admin');
     
-    return new TemplateResponse(
-      'timesheet',
-      'settings-admin',
-      [
+    return new TemplateResponse($this->appName, 'settings-admin', [
+        'allGroups' => $allGroups,
         'hrGroups' => $hrGroups,
-        'hrUserGroup' => $hrUserGroup,
-      ]
-    );
+        'hrUserGroups' => $hrUserGroups,
+    ]);
   }
 
   public function getSection(): string {

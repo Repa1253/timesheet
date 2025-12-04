@@ -31,4 +31,40 @@ class SettingsController extends Controller {
 
     return new DataResponse(['status' => 'success'], Http::STATUS_OK);
   }
+
+  public function updateHrGroups(): DataResponse {
+    $group = $this->request->getParam('group');
+    $remove = $this->request->getParam('remove') === '1';
+    $json = $this->appConfig->getAppValueString('hr_groups');
+    $groups = json_decode($json, true) ?: [];
+
+    if ($remove) {
+      $groups = array_values(array_filter($groups, fn($g) => $g !== $group));
+    } else {
+      if (!in_array($group, $groups, true)) {
+        $groups[] = $group;
+      }
+    }
+    $this->appConfig->setAppValueString('hr_groups', json_encode($groups));
+    
+    return new DataResponse(['hr_groups' => $groups]);
+  }
+
+  public function updateHrUserGroups(): DataResponse {
+    $group = $this->request->getParam('group');
+    $remove = $this->request->getParam('remove') === '1';
+    $json = $this->appConfig->getAppValueString('hr_user_groups');
+    $groups = json_decode($json, true) ?: [];
+
+    if ($remove) {
+      $groups = array_values(array_filter($groups, fn($g) => $g !== $group));
+    } else {
+      if (!in_array($group, $groups, true)) {
+        $groups[] = $group;
+      }
+    }
+    $this->appConfig->setAppValueString('hr_user_groups', json_encode($groups));
+
+    return new DataResponse(['hr_user_groups' => $groups]);
+  }
 }

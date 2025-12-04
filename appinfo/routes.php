@@ -21,6 +21,8 @@ return [
     ['name' => 'holiday#getHolidays', 'url' => '/api/holidays', 'verb' => 'GET'],
 
     // Admin settings
-    ['name' => 'settings#saveAdmin', 'url' => '/admin/settings', 'verb' => 'POST'],
+    ['name' => 'settings#saveAdmin',          'url' => '/admin/settings',          'verb' => 'POST'],
+    ['name' => 'settings#updateHrGroups',     'url' => '/settings/hr_groups',      'verb' => 'POST'],
+    ['name' => 'settings#updateHrUserGroups', 'url' => '/settings/hr_user_groups', 'verb' => 'POST'],
   ],
 ];

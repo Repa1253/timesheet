@@ -14,12 +14,12 @@ use OCP\IUserSession;
 use OCA\Timesheet\Db\EntryMapper;
 use OCA\Timesheet\Db\UserConfigMapper;
 use OCP\AppFramework\Services\IAppConfig;
+use OCA\Timesheet\Service\HrService;
 
 class OverviewController extends Controller {
 
   /** @var string[] */
-  private array $hrGroups;
-  private string $hrUserGroup;
+  private array $hrUserGroups = [];
 
   public function __construct(
     string $appName,
@@ -28,45 +28,41 @@ class OverviewController extends Controller {
     private EntryMapper $entryMapper,
     private UserConfigMapper $userConfigMapper,
     private IGroupManager $groupManager,
-    private IUserSession $userSession
+    private IUserSession $userSession,
+    private HrService $hrService,
   ) {
     parent::__construct($appName, $request);
 
-    $raw = $appConfig->getAppValueString('hr_groups');
-    $this->hrGroups = array_filter(array_map('trim', explode(',', $raw)));
-    $this->hrUserGroup = $appConfig->getAppValueString('hr_user_group');
-  }
-
-  private function isHr(): bool {
-    $user = $this->userSession->getUser();
-    if (!$user) return false;
-    
-    $uid = $user->getUID();
-    foreach ($this->hrGroups as $group) {
-      if ($this->groupManager->isInGroup($uid, $group)) return true;
+    $rawUser = $appConfig->getAppValueString('hr_user_groups');
+    $userGroups = json_decode($rawUser, true);
+    if (!is_array($userGroups)) {
+      $userGroups = array_filter(array_map('trim', explode(',', (string)$rawUser)));
     }
-
-    return false;
+    $this->hrUserGroups = $userGroups;
   }
 
   #[NoAdminRequired]
   public function users(): DataResponse {
-    if (!$this->isHr()) {
+    if (!$this->hrService->isHr()) {
       return new DataResponse([], 403);
     }
 
-    $group = $this->groupManager->get($this->hrUserGroup);
-    if (!$group) {
-      return new DataResponse([], 404);
+    $result = [];
+    foreach ($this->hrUserGroups as $groupName) {
+      if ($groupName === '') continue;
+      $group = $this->groupManager->get($groupName);
+      if (!$group) continue;
+
+      foreach ($group->getUsers() as $user) {
+        $uid = $user->getUID();
+        $result[$uid] = [
+          'id' => $uid,
+          'name' => $user->getDisplayName(),
+        ];
+      }
     }
 
-    $users = $group->getUsers();
-    $result = array_values(array_map(fn($u) => [
-      'id' => $u->getUID(),
-      'name' => $u->getDisplayName(),
-    ], $users));
-
-    return new DataResponse($result);
+    return new DataResponse(array_values($result));
   }
 
   #[NoAdminRequired]
@@ -78,7 +74,7 @@ class OverviewController extends Controller {
     }
 
     $userId = $this->request->getParam('user') ?? $currentUser->getUID();
-    if ($userId !== $currentUser->getUID() && !$this->isHr()) {
+    if ($userId !== $currentUser->getUID() && !$this->hrService->isHr()) {
       return new JSONResponse(['error' => 'Forbidden'], 403);
     }
 
