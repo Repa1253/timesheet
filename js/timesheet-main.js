@@ -672,7 +672,9 @@
         });
       } else {
         // Insert
-        savedEntry = await api(`/api/entries`, {
+        const targetUserId = isHr ? document.querySelector('#hr-user-title span')?.textContent : null;
+        const createPath = (isHr && targetUserId) ? `/api/entries?user=${encodeURIComponent(targetUserId)}` : `/api/entries`;
+        savedEntry = await api(createPath, {
           method: 'POST',
           body: JSON.stringify(payload)
         });

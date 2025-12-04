@@ -42,6 +42,17 @@ class EntryController extends Controller {
 
   #[NoAdminRequired]
   public function create(string $workDate, string $start, string $end, int $breakMinutes = 0, ?string $comment = null): DataResponse {
+    $current = $this->userSession->getUser();
+    if (!$current) {
+      return new DataResponse(['error' => 'Unauthorized'], 401);
+    }
+    $currentUid = $current->getUID();
+    $targetUid = $currentUid;
+    $userParam = $this->request->getParam('user');
+    if ($userParam !== null && $this->hrService->isHr($currentUid)) {
+      $targetUid = $userParam;
+    }
+
     $payload = [
       'workDate' => $workDate,
       'startMin' => self::hmToMin($start),
@@ -49,7 +60,8 @@ class EntryController extends Controller {
       'breakMinutes' => $breakMinutes,
       'comment' => $comment,
     ];
-    $entry = $this->service->create($payload);
+
+    $entry = $this->service->create($payload, $targetUid);
     return new DataResponse($entry);
   }
 
