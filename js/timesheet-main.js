@@ -188,6 +188,96 @@
     stateInputs.forEach(input => { input.value = state ?? ''; });
   }
 
+  function toCsv(rows, sep = ';') {
+    return rows.map(cols => cols.map(val => {
+      const s = val == null ? '' : String(val);
+      if (s.includes(sep) || s.includes('"') || s.includes('\n')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(sep)).join('\r\n');
+  }
+
+  function exportCurrentViewToCsv(isHr) {
+    const container = isHr ? hrUserEntries : document.getElementById('tab-mine');
+    if (!container) return;
+
+    const table = isHr ? container.querySelector('#hr-user-table') : container.querySelector('#ts-table');
+    if (!table) return;
+
+    const rows = [];
+
+    // 1) User
+    const userLabel = isHr 
+      ? (document.querySelector('#hr-user-title span')?.textContent || '')
+      : (typeof currentUserId !== 'undefined' ? currentUserId : '');
+
+    // 2) Worked & Overtime
+    const workedEl   = container.querySelector('#worked-hours-month');
+    const overtimeEl = container.querySelector('#overtime-month');
+    const workedMonth   = workedEl?.textContent.trim() || '';
+    const overtimeMonth = overtimeEl?.textContent.trim() || '';
+
+    // 3) Daily working time
+    const dailyMin = getEffectiveDailyMin(isHr ? container : null);
+    const dailyHm = dailyMin != null ? minToHm(dailyMin) : '';
+
+    rows.push([t('timesheet', 'User'), userLabel]);
+    rows.push([t('timesheet', 'Worked Hours'), workedMonth]);
+    rows.push([t('timesheet', 'Overtime'), overtimeMonth]);
+    rows.push([t('timesheet', 'Daily working time'), dailyHm]);
+    rows.push([]); // empty row
+
+    // 4) Table Header
+    const headerRow = [
+      t('timesheet', 'Date'),
+      "",
+      t('timesheet', 'Status'),
+      t('timesheet', 'Start'),
+      t('timesheet', 'Break (min)'),
+      t('timesheet', 'End'),
+      t('timesheet', 'Duration'),
+      t('timesheet', 'Difference'),
+      t('timesheet', 'Comment'),
+      t('timesheet', 'Warning')
+    ];
+    rows.push(headerRow);
+
+    // 5) Table Rows
+    const body = table.querySelector('tbody');
+    if (body) {
+      body.querySelectorAll('tr').forEach(tr => {
+        const cols = Array.from(tr.cells).map(td => {
+          const input = td.querySelector('input, textarea');
+          if (input) {
+            return input.value;
+          }
+          return td.textContent.trim();
+        });
+        rows.push(cols);
+      });
+    }
+
+    const csv = toCsv(rows);
+
+    const refMonth = isHr ? hrCurrentMonth : currentMonth;
+    const year = refMonth.getFullYear();
+    const month = String(refMonth.getMonth() + 1).padStart(2, '0');
+    const monthStr = `${year}-${month}`;
+
+    const baseName = isHr ? (userLabel || 'employee') : (typeof currentUserId !== 'undefined' ? currentUserId : 'me');
+
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `${t('timesheet', 'timesheet')}-${baseName}-${monthStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   /**
   * API Calls 
   */
@@ -466,7 +556,7 @@
       if (input) inputMin = hmToMin(input.value || '');
     } else {
       // Meine Zeiten: nimm das Feld im eigenen Tab
-      const input = document.querySelector('#tab-mine .config-daily-min');
+      const input = document.getElementById('config-daily-min-mine');
       if (input) inputMin = hmToMin(input.value || '');
     }
     return inputMin ?? cfgMin ?? 480;
@@ -913,6 +1003,14 @@
     if (!row) return;
 
     await saveRowIfNeeded(row);
+  });
+
+  document.getElementById('export-mine-csv')?.addEventListener('click', () => {
+    exportCurrentViewToCsv(false);
+  });
+
+  document.getElementById('export-hr-csv')?.addEventListener('click', () => {
+    exportCurrentViewToCsv(true);
   });
 
   /**

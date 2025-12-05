@@ -21,6 +21,8 @@
           <div><strong><?php p($l->t('Worked (month):')) ?></strong> <span id="worked-hours-month">--:--</span></div>
           <div><strong><?php p($l->t('Overtime (month):')) ?></strong> <span id="overtime-month">--:--</span></div>
           <div><strong><?php p($l->t('Total overtime:')) ?></strong> <span id="overtime-total">--:--</span></div>
+
+          <button type="button" id="export-mine-csv" class="primary"><?php p($l->t('Export Month')) ?></button>
         </div>
       </div>
   
@@ -105,6 +107,7 @@
         <div class="hr-user-header-bar">
           <button id="hr-back-button" class="hr-back-button"><?php p($l->t('Back')) ?></button>
           <h4 id="hr-user-title"><?php p($l->t('Entries for:')) ?> <span></span></h4>
+          <button type="button" id="export-hr-csv" class="primary"><?php p($l->t('Export Month')) ?></button>
         </div>
 
         <!-- Monat, Statistik und Konfiguration nebeneinander -->
