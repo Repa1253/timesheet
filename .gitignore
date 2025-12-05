@@ -9,3 +9,4 @@
 
 /node_modules/
 /appinfo/signature.json
+.vscode/

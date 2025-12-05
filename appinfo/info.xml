@@ -2,10 +2,27 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 	<id>timesheet</id>
-	<name>Arbeitszeitnachweis</name>
-	<summary>Zeiterfassung für Mitarbeitende und HR-Übersicht</summary>
-	<description>Erfassen, prüfen und überblicken von Arbeitszeiten direkt in Nextcloud.</description>
-	<version>1.0.3</version>
+
+	<name>Timesheet</name>
+	<name lang="de">Arbeitszeitnachweis</name>
+
+	<summary>Time tracking for employees with an HR overview</summary>
+	<summary lang="de">Zeiterfassung für Mitarbeitende mit HR-Übersicht</summary>
+
+	<description><![CDATA[
+		Simple time tracking app for employees and HR inside Nextcloud.
+
+		Employees can enter their daily working hours, see monthly totals and overtime.
+		HR users get an overview of all employees, including targets, balances and rule violations.
+	]]></description>
+	<description lang="de"><![CDATA[
+		Einfache Zeiterfassungs-App für Mitarbeitende und HR innerhalb von Nextcloud.
+
+		Mitarbeitende können ihre täglichen Arbeitszeiten erfassen, monatliche Summen und Überstunden einsehen.
+		HR-Nutzer erhalten eine Übersicht über alle Mitarbeitenden, inklusive Sollzeiten, Salden und Regelverstößen.
+	]]></description>
+
+	<version>1.0.4</version>
 
 	<licence>agpl</licence>
 
@@ -22,7 +39,7 @@
 	<navigations>
     <navigation>
       <id>timesheet</id>
-      <name>Arbeitszeit</name>
+      <name>Timesheet</name>
       <route>timesheet.page.index</route>
       <order>10</order>
       <icon>timesheet.png</icon>

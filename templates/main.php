@@ -2,8 +2,8 @@
   <!-- Tabs -->
   <div class="ts-tabs">
     <?php if ($_['isHR']): ?>
-      <button class="ts-tab active" data-tab="mine">Arbeitszeitnachweis</button>
-      <button class="ts-tab" data-tab="hr">HR-Übersicht</button>
+      <button class="ts-tab active" data-tab="mine"><?php p($l->t('Timesheet')) ?></button>
+      <button class="ts-tab" data-tab="hr"><?php p($l->t('HR overview')) ?></button>
     <?php endif; ?>
   </div>
 
@@ -11,25 +11,25 @@
   <div id="tab-mine" class="ts-tabview active">
     <div class="ts-month-row-main">
       <div class="ts-month-row">
-        <h3>Meine Einträge</h3>
+        <h3><?php p($l->t('My entries')) ?></h3>
   
         <button type="button" class="month-nav" id="month-prev"><</button>
         <span id="month-display" class="month-display">Monat Jahr</span>
         <button type="button" class="month-nav" id="month-next">></button>
   
         <div class="ts-stats">
-          <div><strong>Gearbeitet (Monat):</strong> <span id="worked-hours-month">--:--</span></div>
-          <div><strong>Überstunden (Monat):</strong> <span id="overtime-month">--:--</span></div>
-          <div><strong>Gesamt-Überstunden:</strong> <span id="overtime-total">--:--</span></div>
+          <div><strong><?php p($l->t('Worked (month):')) ?></strong> <span id="worked-hours-month">--:--</span></div>
+          <div><strong><?php p($l->t('Overtime (month):')) ?></strong> <span id="overtime-month">--:--</span></div>
+          <div><strong><?php p($l->t('Total overtime:')) ?></strong> <span id="overtime-total">--:--</span></div>
         </div>
       </div>
   
       <!-- Konfigurationszeile -->
       <div class="hr-config-row">            
-        <label for="config-daily-min-mine">Arbeitszeit:</label>
+        <label for="config-daily-min-mine"><?php p($l->t('Daily working time:')) ?></label>
         <input type="time" id="config-daily-min-mine" class="config-daily-min" value="08:00" />
 
-        <label for="config-state-mine">Bundesland:</label>
+        <label for="config-state-mine"><?php p($l->t('State:')) ?></label>
         <select id="config-state-mine" class="config-state">
           <option value="BW">Baden-Württemberg</option>
           <option value="BY" selected>Bayern</option>
@@ -49,22 +49,22 @@
           <option value="TH">Thüringen</option>
         </select>
         
-        <button id="save-config-btn-mine" class="save-config-btn">Speichern</button>
+        <button id="save-config-btn-mine" class="save-config-btn"><?php p($l->t('Save')) ?></button>
       </div>
     </div>
 
     <table id="ts-table">
       <thead>
         <tr>
-          <th colspan="2">Datum</th>
-          <th>Status</th>
-          <th>Start</th>
-          <th>Pause (Min)</th>
-          <th>Ende</th>
-          <th>Dauer</th>
-          <th>Differenz</th>
-          <th>Kommentar</th>
-          <th>Warnung</th>
+          <th colspan="2"><?php p($l->t('Date')) ?></th>
+          <th><?php p($l->t('Status')) ?></th>
+          <th><?php p($l->t('Start')) ?></th>
+          <th><?php p($l->t('Break (min)')) ?></th>
+          <th><?php p($l->t('End')) ?></th>
+          <th><?php p($l->t('Duration')) ?></th>
+          <th><?php p($l->t('Difference')) ?></th>
+          <th><?php p($l->t('Comment')) ?></th>
+          <th><?php p($l->t('Warning')) ?></th>
         </tr>
       </thead>
       
@@ -80,16 +80,16 @@
 
       <!-- Mitarbeitende -->
       <div id="hr-userlist-section" class="ts-hr-section">
-        <h4>Mitarbeitende</h4>
+        <h4><?php p($l->t('Employees')) ?></h4>
         <table class="grid hr-userlist">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Soll pro Tag</th>
-              <th>Saldo</th>
-              <th>Letzter Eintrag</th>
-              <th>Tage seit letzen Eintrag</th>
-              <th>Fehlermeldungen</th>
+              <th><?php p($l->t('Name')) ?></th>
+              <th><?php p($l->t('Daily target')) ?></th>
+              <th><?php p($l->t('Balance')) ?></th>
+              <th><?php p($l->t('Last entry')) ?></th>
+              <th><?php p($l->t('Days since last entry')) ?></th>
+              <th><?php p($l->t('Warnings')) ?></th>
             </tr>
           </thead>
           <tbody id="hr-userlist">
@@ -103,8 +103,8 @@
 
         <!-- Kopfzeile: Zurück + Titel nebeneinander -->
         <div class="hr-user-header-bar">
-          <button id="hr-back-button" class="hr-back-button">Zurück</button>
-          <h4 id="hr-user-title">Einträge von: <span></span></h4>
+          <button id="hr-back-button" class="hr-back-button"><?php p($l->t('Back')) ?></button>
+          <h4 id="hr-user-title"><?php p($l->t('Entries for:')) ?> <span></span></h4>
         </div>
 
         <!-- Monat, Statistik und Konfiguration nebeneinander -->
@@ -115,18 +115,18 @@
             <button type="button" class="month-nav" id="hr-month-next">></button>
             
             <div class="ts-stats">
-              <div><strong>Gearbeitet (Monat):</strong> <span id="worked-hours-month">--:--</span></div>
-              <div><strong>Überstunden (Monat):</strong> <span id="overtime-month">--:--</span></div>
-              <div><strong>Gesamt-Überstunden:</strong> <span id="overtime-total">--:--</span></div>
+              <div><strong><?php p($l->t('Worked (month):')) ?></strong> <span id="worked-hours-month">--:--</span></div>
+              <div><strong><?php p($l->t('Overtime (month):')) ?></strong> <span id="overtime-month">--:--</span></div>
+              <div><strong><?php p($l->t('Total overtime:')) ?></strong> <span id="overtime-total">--:--</span></div>
             </div>
           </div>
 
           <!-- Konfigurationszeile -->
           <div class="hr-config-row">            
-            <label for="config-daily-min-hr">Arbeitszeit:</label>
+            <label for="config-daily-min-hr"><?php p($l->t('Daily working time:')) ?></label>
             <input type="time" id="config-daily-min-hr" class="config-daily-min" value="08:00" />
 
-            <label for="config-state-hr">Bundesland:</label>
+            <label for="config-state-hr"><?php p($l->t('State:')) ?></label>
             <select id="config-state-hr" class="config-state">
               <option value="BW">Baden-Württemberg</option>
               <option value="BY" selected>Bayern</option>
@@ -146,22 +146,22 @@
               <option value="TH">Thüringen</option>
             </select>
             
-            <button id="save-config-btn-hr" class="save-config-btn">Speichern</button>
+            <button id="save-config-btn-hr" class="save-config-btn"><?php p($l->t('Save')) ?></button>
           </div>
         </div>
         
         <table id="hr-user-table" class="grid hr-table">
           <thead>
             <tr>
-              <th colspan="2">Datum</th>
-              <th>Status</th>
-              <th>Start</th>
-              <th>Pause (Min)</th>
-              <th>Ende</th>
-              <th>Dauer</th>
-              <th>Differenz</th>
-              <th>Kommentar</th>
-              <th>Warnung</th>
+              <th colspan="2"><?php p($l->t('Date')) ?></th>
+              <th><?php p($l->t('Status')) ?></th>
+              <th><?php p($l->t('Start')) ?></th>
+              <th><?php p($l->t('Break (min)')) ?></th>
+              <th><?php p($l->t('End')) ?></th>
+              <th><?php p($l->t('Duration')) ?></th>
+              <th><?php p($l->t('Difference')) ?></th>
+              <th><?php p($l->t('Comment')) ?></th>
+              <th><?php p($l->t('Warning')) ?></th>
             </tr>
           </thead>
           <tbody id="hr-user-body">

@@ -1,0 +1,24 @@
+OC.L10N.register(
+  "timesheet",
+  {
+    "Sun": "So",
+    "Mon": "Mo",
+    "Tue": "Di",
+    "Wed": "Mi",
+    "Thu": "Do",
+    "Fri": "Fr",
+    "Sat": "Sa",
+    "Above maximum time": "Über Höchstzeit",
+    "Break too short": "Pause zu kurz",
+    "Sunday work not allowed": "Sonntagsarbeit nicht gestattet",
+    "Holiday work not allowed": "Feiertagsarbeit nicht gestattet",
+    "No entry for more than 14 days": "Mehr als 14 Tage kein Eintrag",
+    "Too much overtime": "Zu viel Überstunden",
+    "Too many negative hours": "Zu viele Minusstunden",
+    "Holiday": "Feiertag",
+    "Weekend": "Wochenende",
+    "Time missing": "Zeitangabe fehlt",
+    "Time incomplete": "Zeitangabe unvollständig",
+  },
+  "nplurals=2; plural=(n != 1);"
+);

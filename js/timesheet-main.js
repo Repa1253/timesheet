@@ -47,7 +47,15 @@
   * Utility Functions 
   */
 
-  const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']; // Weekday abbreviations in German
+  // Weekday abbreviations
+  const days = [t('timesheet', 'Sun'), 
+                t('timesheet', 'Mon'), 
+                t('timesheet', 'Tue'), 
+                t('timesheet', 'Wed'), 
+                t('timesheet', 'Thu'), 
+                t('timesheet', 'Fri'), 
+                t('timesheet', 'Sat')
+  ];
 
   function formatDate(dateObj) {
     // Format a Date to DD.MM.YYYY (German locale style)
@@ -106,13 +114,13 @@
     const issues = [];
 
     // Zeitliche Grenzen
-    if (dur > 10 * 60) issues.push('Über Höchstzeit');
+    if (dur > 10 * 60) issues.push(t('timesheet', 'Above maximum time'));
 
     // Pausenregelung
     if (dur > 9 * 60 && brk < 45) {
-      issues.push('Pause zu kurz');
+      issues.push(t('timesheet', 'Break too short'));
     } else if (dur > 6 * 60 && brk < 30) {
-      issues.push('Pause zu kurz');
+      issues.push(t('timesheet', 'Break too short'));
     }
 
     // Kalenderregeln
@@ -121,8 +129,8 @@
       const isSunday = date.getDay() === 0;
       const isHoliday = holidayMap && holidayMap[dateStr];
 
-      if (isSunday) issues.push('Sonntagsarbeit nicht gestattet');
-      if (isHoliday) issues.push('Feiertagsarbeit nicht gestattet');
+      if (isSunday) issues.push(t('timesheet', 'Sunday work not allowed'));
+      if (isHoliday) issues.push(t('timesheet', 'Holiday work not allowed'));
     }
 
     return issues.join(', ');
@@ -286,16 +294,16 @@
               diffDays = Math.floor((Date.parse(todayStr) - Date.parse(lastDateStr)) / (1000 * 60 * 60 * 24));
               if (diffDays < 0) diffDays = 0;
               if (daysCell) daysCell.textContent = String(diffDays);
-              if (diffDays >= 14) errors.push('Mehr als 14 Tage kein Eintrag');
+              if (diffDays >= 14) errors.push(t('timesheet', 'No entry for more than 14 days'));
             } else {
-              errors.push('Mehr als 14 Tage kein Eintrag');
+              errors.push(t('timesheet', 'No entry for more than 14 days'));
             }
 
             if (typeof overtimeMinutes === 'number') {
               if (overtimeMinutes > 600) {
-                errors.push('Zu viele Überstunden');
+                errors.push(t('timesheet', 'Too much overtime'));
               } else if (overtimeMinutes < -600) {
-                errors.push('Zu viele Minusstunden');
+                errors.push(t('timesheet', 'Too many negative hours'));
               }
             }
 
@@ -341,7 +349,7 @@
     const dayIndex   = dateObj.getDay();
     const isHoliday  = Object.prototype.hasOwnProperty.call(holidayMap, dateStr);
     const isWeekend  = (dayIndex === 0 || dayIndex === 6);
-    const statusText = isHoliday ? 'Feiertag' : (isWeekend ? 'Wochenende' : '');
+    const statusText = isHoliday ? t('timesheet', 'Holiday') : (isWeekend ? t('timesheet', 'Weekend') : '');
 
     const startMin   = entry?.startMin ?? null;
     const endMin     = entry?.endMin ?? null;
@@ -532,6 +540,7 @@
     const commentInput = row.querySelector('.commentInput');
     const warnCell     = row.querySelector('.ts-warn');
     const durCell      = row.querySelector('.ts-duration');
+    const diffCell     = row.querySelector('.ts-diff');
 
     await api(`/api/entries/${encodeURIComponent(entryId)}`, { method: 'DELETE' });
 
@@ -549,6 +558,7 @@
 
     if (warnCell) warnCell.textContent = '';
     if (durCell)  durCell.textContent  = '--:--';
+    if (diffCell) diffCell.textContent = '--:--';
 
     updateWorkedHours(row);
 
@@ -570,6 +580,7 @@
     const commentInput = row.querySelector('.commentInput');
     const warnCell     = row.querySelector('.ts-warn');
     const durCell      = row.querySelector('.ts-duration');
+    const diffCell     = row.querySelector('.ts-diff');
 
     if (!startInput || !endInput || !breakInput) return;
 
@@ -594,6 +605,7 @@
       if (!hasAnyTime && !commentNonEmpty) {
         if (warnCell) warnCell.textContent = '';
         if (durCell)  durCell.textContent  = '--:--';
+        if (diffCell) diffCell.textContent = '--:--';
       }
       return;
     };
@@ -620,12 +632,12 @@
 
     // Nur Kommentar vorhanden, Zeit leer → nichts tun
     if (!hasBothTimes && commentNonEmpty) {
-      if (warnCell) warnCell.textContent = 'Zeitangabe fehlt';
+      if (warnCell) warnCell.textContent = t('timesheet', 'Time missing');
       return;
     }
 
     if (!hasBothTimes && !commentNonEmpty) {
-      if (warnCell) warnCell.textContent = 'Zeitangabe unvollständig';
+      if (warnCell) warnCell.textContent = t('timesheet', 'Time incomplete');
       return;
     }
     
@@ -653,7 +665,6 @@
     const holidayMap = holidayCache.get(`${stateCode}_${dateStr.slice(0, 4)}`) || {};
 
     const baseDailyMin = getEffectiveDailyMin(isHr ? document.getElementById('hr-user-entries') : null);
-    const diffCell     = row.querySelector('.ts-diff');
     const diffMin      = (duration != null && baseDailyMin != null) ? (duration - baseDailyMin) : null;
 
     if (warnCell) warnCell.textContent = checkRules({ startMin, endMin, breakMinutes: payload.breakMinutes }, dateStr, holidayMap);

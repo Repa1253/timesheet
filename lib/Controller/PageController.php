@@ -23,8 +23,10 @@ class PageController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): TemplateResponse {
+		Util::addScript('core', 'l10n');
 		Util::addScript('timesheet', 'timesheet-main');
 		Util::addStyle('timesheet', 'style');
+		Util::addTranslations('timesheet');
 
 		return new TemplateResponse($this->appName, 'main', [
 			'isHR' => $this->hrService->isHr()
