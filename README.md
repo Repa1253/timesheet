@@ -3,7 +3,7 @@
 Simple Timesheet app for Nextcloud — lightweight time tracking for users. This repository contains the app source intended for local Nextcloud Docker development.
 
 ## Features
-- Track time per project/task
+- Track time
 - Per-user entries and export
 - Simple UI integrated into Nextcloud
 
