@@ -38,7 +38,12 @@
     "Wed": "Mi",
     "Thu": "Do",
     "Fri": "Fr",
-    "Sat": "Sa"
+    "Sat": "Sa",
+    "Statistics (current Month)": "Statistiken (aktueller Monat)",
+    "Total hours of employees": "Gesamtarbeitszeit aller Mitarbeitenden",
+    "Total overtime of employees": "Gesamtüberstunden aller Mitarbeitenden",
+    "Employees with overtime": "Mitarbeitende mit Überstunden",
+    "Employees with negative overtime": "Mitarbeitende mit Minusstunden"
   },
   "pluralForm": "nplurals=2; plural=(n != 1);"
 }

@@ -15,7 +15,7 @@
         return OC.currentUser;  // Fallback for older NC versions
       }
     } catch (error) {
-      console.warn('⚠️ Konnte currentUserId nicht ermitteln:', error);
+      console.warn('⚠️ Could not determine currentUserId:', error);
     }
     return null;
   })();
@@ -35,10 +35,16 @@
   const hrUserBody    = document.getElementById('hr-user-body'); // tbody for HR-selected user's entries
   const hrUserEntries = document.getElementById('hr-user-entries'); // container section for HR user entries
   const hrUserTitle   = document.getElementById('hr-user-title'); // heading that displays selected user ID
-  const userListEl    = document.getElementById('hr-userlist'); // list of users for HR view
-  const dailyMinInputs = Array.from(document.querySelectorAll('.config-daily-min'));
-  const stateInputs    = Array.from(document.querySelectorAll('.config-state'));
-  const saveConfigBtns = Array.from(document.querySelectorAll('.save-config-btn'));
+
+  const userListEl              = document.getElementById('hr-userlist'); // list of users for HR view
+  const hrStatsTotalEl          = document.getElementById('hr-stat-total-hours'); // total hours element in HR view
+  const hrStatsOvertimeEl       = document.getElementById('hr-stat-total-overtime'); // overtime hours element in HR view
+  const hrStatsNOvertimeEl      = document.getElementById('hr-stat-employees-overtime'); // number of overtime entries element in HR view
+  const hrStatsNMinusOvertimeEl = document.getElementById('hr-stat-employees-negative'); // number of negative overtime entries element in HR view
+
+  const dailyMinInputs = Array.from(document.querySelectorAll('.config-daily-min')); // all daily min inputs
+  const stateInputs    = Array.from(document.querySelectorAll('.config-state')); // all state select inputs
+  const saveConfigBtns = Array.from(document.querySelectorAll('.save-config-btn')); // all save config buttons
 
   // Short alias for querySelector (for convenience in this script)
   const $ = (sel) => document.querySelector(sel);
@@ -87,9 +93,15 @@
   function hmToMin(str) {
     // Convert "HH:MM" string to total minutes (number). Returns null for invalid input.
     if (!str) return null;
+    let sign = 1;
+    str = str.trim();
+    if (str.startsWith('-')) {
+      sign = -1;
+      str = str.slice(1);
+    }
     const [h, m] = str.split(':').map(Number);
     if (Number.isNaN(h) || Number.isNaN(m)) return null;
-    return h * 60 + m;
+    return sign * (h * 60 + m);
   }
 
   function pickDailyMin(cfg) {
@@ -170,7 +182,7 @@
 
       return latest;
     } catch (error) {
-      console.error(`❌ Laden des letzten Eintrags für ${userId} fehlgeschlagen:`, error);
+      console.error(`❌ Failed to load the last entry for ${userId}:`, error);
       return null;
     }
   }
@@ -278,6 +290,29 @@
     URL.revokeObjectURL(url);
   }
 
+  function updateHrStats() {
+    if (!userListEl) return;
+
+    let totalMinutes = 0;
+    let totalOvertimeMinutes = 0;
+    let totalNOvertime = 0;
+    let totalNMinusOvertime = 0;
+    userListEl.querySelectorAll('tr').forEach(tr => {
+      let val = parseInt(tr.dataset.totalMinutesMonth || '0', 10);
+      if (!Number.isNaN(val)) totalMinutes += val;
+      
+      val = hmToMin(tr.querySelector('.hr-user-balance')?.textContent || '0');
+      if (!Number.isNaN(val)) totalOvertimeMinutes += val;
+      if (!Number.isNaN(val) && val > 0) totalNOvertime++;
+      if (!Number.isNaN(val) && val < 0) totalNMinusOvertime++;
+    });
+
+    if (hrStatsTotalEl) hrStatsTotalEl.textContent = minToHm(totalMinutes);
+    if (hrStatsOvertimeEl) hrStatsOvertimeEl.textContent = minToHm(totalOvertimeMinutes);
+    if (hrStatsNOvertimeEl) hrStatsNOvertimeEl.textContent = String(totalNOvertime);
+    if (hrStatsNMinusOvertimeEl) hrStatsNMinusOvertimeEl.textContent = String(totalNMinusOvertime);
+  }
+
   /**
   * API Calls 
   */
@@ -312,7 +347,7 @@
         setConfigInputs(null, cfg.state);
       }
     } catch (error) {
-      console.warn('⚠️ Konnte Benutzerkonfiguration nicht laden:', error);
+      console.warn('⚠️ Could not load user configuration', error);
     }
   }
 
@@ -355,12 +390,18 @@
               targetCell.textContent = minToHm(dailyMinutes);
             }
 
-            // Gesamt-Überstunden (hr-user-balance)
-            let overtimeMinutes = 0;
-            const balanceCell = tr.querySelector('.hr-user-balance');
-            if (balanceCell && overtime) {
-              overtimeMinutes = overtime.overtimeMinutes ?? 0;
-              balanceCell.textContent = minToHm(overtimeMinutes);
+            if (overtime) {
+              // 1) Gesamt-Arbeitszeit des Monats
+              const totalMinutes = overtime.totalMinutes ?? 0;
+              tr.dataset.totalMinutesMonth = String(totalMinutes);
+
+              // 2) Überstunden-Saldo (hr-user-balance)
+              let overtimeMinutes = 0;
+              const balanceCell = tr.querySelector('.hr-user-balance');
+              if (balanceCell) {
+                overtimeMinutes = overtime.overtimeMinutes ?? 0;
+                balanceCell.textContent = minToHm(overtimeMinutes);
+              }
             }
 
             // Letzter Eintrag (Datum)
@@ -398,19 +439,24 @@
             }
 
             if (errorCell) errorCell.textContent = errors.join(', ');
+
+            updateHrStats();
           } catch (error) {
-            console.warn(`⚠️ Konnte HR-Daten für User ${id} nicht laden:`, error);
+            console.warn(`⚠️ Failed to load HR data for user ${id}:`, error);
           }
         })();
       });
 
       userListEl.appendChild(frag);
     } catch (error) {
-      console.warn('⚠️ Konnte HR-Benutzerliste nicht laden:', error);
+      console.warn('⚠️ Failed to load HR user list:', error);
     }
   }
 
   async function getHolidays(year, state) {
+    if (state == null || state === '') {
+      return {};
+    }
     const cacheKey = `${state}_${year}`;
     if (holidayCache.has(cacheKey)) {
       return holidayCache.get(cacheKey);
@@ -422,7 +468,7 @@
         return data;
       }
     } catch (e) {
-      console.warn(`⚠️ Feiertage konnten nicht geladen werden für ${year} ${state}:`, e);
+      console.warn(`⚠️ Failed to load holidays for ${year} ${state}:`, e);
     }
     // Fallback: keine Feiertage
     const empty = {};
@@ -484,7 +530,7 @@
       <td>${days[dayIndex]}</td>
       <td class="ts-status ${isWeekend ? 'is-weekend' : ''}">${statusText}</td>
       <td><input type="time" class="startTime" value="${startStr}"></td>
-      <td><input type="number" class="breakMinutes" value="${breakStr}" min="0"></td>
+      <td><input type="number" class="breakMinutes" value="${breakStr}"></td>
       <td><input type="time" class="endTime" value="${endStr}"></td>
       <td class="ts-duration">${durStr}</td>
       <td class="ts-diff">${diffStr}</td>
@@ -503,7 +549,7 @@
       ? `/api/entries?user=${encodeURIComponent(userId)}&from=${fromStr}&to=${toStr}`
       : `/api/entries?from=${fromStr}&to=${toStr}`;
     const entries = await api(query).catch(error => {
-      console.error('❌ Laden der Einträge fehlgeschlagen:', error);
+      console.error('❌ Failed to load entries:', error);
       return [];
     });
 
@@ -521,10 +567,10 @@
     let stateCode;
     if (userId) {
       const hrStateInput = document.querySelector('#tab-hr .config-state');
-      stateCode = (hrStateInput?.value || 'BY');
+      stateCode = (hrStateInput?.value);
     } else {
       const mineStateInput = document.querySelector('#tab-mine .config-state');
-      stateCode = (mineStateInput?.value || userConfig?.state || 'BY');
+      stateCode = (mineStateInput?.value || userConfig?.state);
     }
 
     const holidayMap = await getHolidays(year, stateCode);
@@ -600,7 +646,7 @@
       const minutes = data?.overtimeMinutes ?? 0;
       overtimeTotalEl.textContent = minToHm(minutes);
     } catch (error) {
-      console.error('❌ Laden der Gesamt-Überstunden fehlgeschlagen:', error);
+      console.error('❌ Failed to load total overtime hours:', error);
     }
   }
 
@@ -747,10 +793,10 @@
     let stateCode;
     if (isHr) {
       const hrStateInput = document.querySelector('#tab-hr .config-state');
-      stateCode = (hrStateInput?.value || 'BY');
+      stateCode = (hrStateInput?.value);
     } else {
       const mineStateInput = document.querySelector('#tab-mine .config-state');
-      stateCode = (mineStateInput?.value || userConfig?.state || 'BY');
+      stateCode = (mineStateInput?.value || userConfig?.state);
     }
     const holidayMap = holidayCache.get(`${stateCode}_${dateStr.slice(0, 4)}`) || {};
 
@@ -834,6 +880,28 @@
     if (uid) loadUserEntries(uid, hrCurrentMonth);
   });
 
+  // Click handler for month label to jump back to current month (personal view)
+  $('#month-display')?.addEventListener('click', () => {
+    const today = new Date();
+    if (currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth()) {
+      return; // already current month
+    }
+    currentMonth = today;
+    updateMonthDisplay();
+    loadUserEntries(null, currentMonth);
+  });
+  // Click handler for month label to jump back to current month (HR view)
+  $('#hr-month-display')?.addEventListener('click', () => {
+    const today = new Date();
+    if (hrCurrentMonth.getFullYear() === today.getFullYear() && hrCurrentMonth.getMonth() === today.getMonth()) {
+      return; // already current month
+    }
+    hrCurrentMonth = today;
+    updateHrMonthDisplay();
+    const uid = hrUserTitle?.querySelector('span')?.textContent;
+    if (uid) loadUserEntries(uid, hrCurrentMonth);
+  });
+
   // Click handler for HR user selection (when an HR clicks on a user from the list)
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.hr-load-user');
@@ -886,13 +954,15 @@
   document.getElementById('hr-back-button')?.addEventListener('click', () => {
     const tabHrSection = document.getElementById('tab-hr');
     if (!tabHrSection) return;
-    // Hide the user entries section and show the user list and violations sections
-    tabHrSection.querySelectorAll('.ts-hr-section').forEach(sec => sec.style.display = 'none');
-    const listSection = tabHrSection.querySelector('#hr-userlist')?.closest('.ts-hr-section');
-    const violSection = tabHrSection.querySelector('#hr-violations-body')?.closest('.ts-hr-section');
-    if (listSection) listSection.style.display = 'block';
-    if (violSection) violSection.style.display = 'block';
-    if (hrUserEntries) hrUserEntries.style.display = 'none';
+
+    // Hide the user entries section and show the user list
+    tabHrSection.querySelectorAll('.ts-hr-section').forEach(sec => {
+      if (sec.id === 'hr-user-entries') {
+        sec.style.display = 'none';
+      } else {
+        sec.style.display = '';
+      }
+    });
   });
 
   // Tab switching (between "Meine Zeiten" and "HR" views)
@@ -918,30 +988,53 @@
     
       const container = btn.closest('.hr-config-row') || document;
       const dailyInput = container.querySelector('.config-daily-min') || dailyMinInputs[0];
-      const stateInput = container.querySelector('.config-state') || stateInputs[0];
+      const stateInput = container.querySelector('.config-state')     || stateInputs[0];
 
       const timeStr = dailyInput?.value || '';
       const state   = stateInput?.value || '';
       const minutes = hmToMin(timeStr) ?? 480;
       
+      const inMine = !!btn.closest('#tab-mine');
+      const inHr =   !!btn.closest('#tab-hr');
+
+      let targetUserId = currentUserId;
+      if (inHr) {
+        const span = hrUserTitle?.querySelector('span');
+        const selectedId = span?.textContent?.trim();
+        if (selectedId) {
+          targetUserId = selectedId;
+        }
+      }
+
       btn.disabled = true;
 
       try {
-        await api(`/api/hr/config/${currentUserId}`, {
+        await api(`/api/hr/config/${targetUserId}`, {
           method: 'PUT',
           body: JSON.stringify({ dailyMin: minutes, state })
         });
     
-        // Update global userConfig and recalc overtime with the new settings
-        userConfig = { ...(userConfig || {}), dailyMin: minutes, workMinutes: minutes, state };
-        setConfigInputs(minutes, state);
+        if (targetUserId === currentUserId) {
+          // If saving own config, also update the global userConfig
+          userConfig = { ...(userConfig || {}), dailyMin: minutes, workMinutes: minutes, state };
+          
+          // Update userConfig and recalc overtime with the new settings
+          userConfig = { ...(userConfig || {}), dailyMin: minutes, workMinutes: minutes, state };
+          setConfigInputs(minutes, state);
+          
+          const firstRow = tsBody?.querySelector('tr');
+          if (firstRow) updateWorkedHours(firstRow);
 
-        const firstRow = tsBody?.querySelector('tr') || hrUserBody?.querySelector('tr');
-        if (firstRow) updateWorkedHours(firstRow);
-    
-        await refreshOvertimeTotal(currentUserId);
+          await refreshOvertimeTotal(currentUserId);
+        } else {
+          // If HR saved another user's config, reload that user's entries with new settings
+          const firstHrRow = hrUserBody?.querySelector('tr');
+          if (firstHrRow) updateWorkedHours(firstHrRow);
+
+          await refreshOvertimeTotal(targetUserId, document.getElementById('tab-hr'));
+        }
       } catch (error) {
-        console.error('❌ Speichern der Konfiguration fehlgeschlagen:', error);
+        console.error('❌ Failed to save configuration:', error);
       } finally {
         btn.disabled = false;
       }
