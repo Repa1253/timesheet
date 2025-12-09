@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.0.5]
+### Added
+- New HR statistics panel in the HR view: shows total working hours, total overtime, and how many employees currently have positive or negative overtime for the selected month.
+- Month labels in both personal and HR views are now clickable – a single click jumps back to the current month, making navigation much faster.
+
+### Improved
+- The description now explicitly mentions that, when a German federal state is configured, public holidays of that state are shown in the calendar.
+
+### Fixed
+- HR configuration saving now correctly updates the selected employee’s settings instead of the HR user’s own configuration.
+- Negative overtime values are now handled correctly in all statistics, so monthly totals are accurate.
+- The holiday logic no longer falls back to “BY” (Bavaria) when no state is selected; leaving the state empty means no public holidays are applied.
+
 ## [1.0.4]
 ### Added
 - HR settings can now be managed more comfortably in the admin area: you can select multiple HR groups and multiple “employee groups” directly from the list of all Nextcloud groups.
