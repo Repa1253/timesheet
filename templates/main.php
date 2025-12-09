@@ -14,15 +14,15 @@
         <h3><?php p($l->t('My entries')) ?></h3>
   
         <button type="button" class="month-nav" id="month-prev"><</button>
-        <span id="month-display" class="month-display">Monat Jahr</span>
+        <button type="button" id="month-display" class="month-display month-display-btn">Month Year</button>
         <button type="button" class="month-nav" id="month-next">></button>
   
+        <button type="button" id="export-mine-csv" class="primary"><?php p($l->t('Export Month')) ?></button>
+        
         <div class="ts-stats">
           <div><strong><?php p($l->t('Worked (month):')) ?></strong> <span id="worked-hours-month">--:--</span></div>
           <div><strong><?php p($l->t('Overtime (month):')) ?></strong> <span id="overtime-month">--:--</span></div>
           <div><strong><?php p($l->t('Total overtime:')) ?></strong> <span id="overtime-total">--:--</span></div>
-
-          <button type="button" id="export-mine-csv" class="primary"><?php p($l->t('Export Month')) ?></button>
         </div>
       </div>
   
@@ -33,6 +33,7 @@
 
         <label for="config-state-mine"><?php p($l->t('State:')) ?></label>
         <select id="config-state-mine" class="config-state">
+          <option value=null></option>
           <option value="BW">Baden-Württemberg</option>
           <option value="BY" selected>Bayern</option>
           <option value="BE">Berlin</option>
@@ -80,24 +81,51 @@
   <?php if ($_['isHR']): ?>
     <div id="tab-hr" class="ts-tabview">
 
-      <!-- Mitarbeitende -->
-      <div id="hr-userlist-section" class="ts-hr-section">
-        <h4><?php p($l->t('Employees')) ?></h4>
-        <table class="grid hr-userlist">
-          <thead>
-            <tr>
-              <th><?php p($l->t('Name')) ?></th>
-              <th><?php p($l->t('Daily target')) ?></th>
-              <th><?php p($l->t('Balance')) ?></th>
-              <th><?php p($l->t('Last entry')) ?></th>
-              <th><?php p($l->t('Days since last entry')) ?></th>
-              <th><?php p($l->t('Warnings')) ?></th>
-            </tr>
-          </thead>
-          <tbody id="hr-userlist">
-            <!-- wird per JS gefüllt -->
-          </tbody>
-        </table>
+      <div class="ts-hr-row">
+        <!-- Mitarbeitende -->
+        <div id="hr-userlist-section" class="ts-hr-section">
+          <h4><?php p($l->t('Employees')) ?></h4>
+          <table class="grid hr-userlist">
+            <thead>
+              <tr>
+                <th><?php p($l->t('Name')) ?></th>
+                <th><?php p($l->t('Daily target')) ?></th>
+                <th><?php p($l->t('Balance')) ?></th>
+                <th><?php p($l->t('Last entry')) ?></th>
+                <th><?php p($l->t('Days since last entry')) ?></th>
+                <th><?php p($l->t('Warnings')) ?></th>
+              </tr>
+            </thead>
+            <tbody id="hr-userlist">
+              <!-- wird per JS gefüllt -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- HR-Statistiken -->
+        <div id="hr-stats-section" class="ts-hr-section">
+          <h4><?php p($l->t('Statistics (current Month)')) ?></h4>
+          <table class="grid hr-stats-table">
+            <tbody>
+              <tr>
+                <th><?php p($l->t('Total hours of employees')); ?></th>
+                <td id="hr-stat-total-hours">-</td>
+              </tr>
+              <tr>
+                <th><?php p($l->t('Total overtime of employees')); ?></th>
+                <td id="hr-stat-total-overtime">-</td>
+              </tr>
+              <tr>
+                <th><?php p($l->t('Employees with overtime')); ?></th>
+                <td id="hr-stat-employees-overtime">-</td>
+              </tr>
+              <tr>
+                <th><?php p($l->t('Employees with negative overtime')); ?></th>
+                <td id="hr-stat-employees-negative">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Zielbereich für die ausgewählten Einträge eines Nutzers -->
@@ -114,7 +142,7 @@
         <div class="hr-user-controls-row">
           <div class="ts-month-row">
             <button type="button" class="month-nav" id="hr-month-prev"><</button>
-            <span id="hr-month-display" class="month-display">Monat Jahr</span>
+            <button type="button" id="hr-month-display" class="month-display month-display-btn">Month Year</button>
             <button type="button" class="month-nav" id="hr-month-next">></button>
             
             <div class="ts-stats">
@@ -131,6 +159,7 @@
 
             <label for="config-state-hr"><?php p($l->t('State:')) ?></label>
             <select id="config-state-hr" class="config-state">
+              <option value=null></option>
               <option value="BW">Baden-Württemberg</option>
               <option value="BY" selected>Bayern</option>
               <option value="BE">Berlin</option>

@@ -10,23 +10,28 @@
 	<summary lang="de">Zeiterfassung für Mitarbeitende mit HR-Übersicht</summary>
 
 	<description><![CDATA[
-		Simple time tracking app for employees and HR inside Nextcloud.
+Simple time tracking app for employees and HR inside Nextcloud.
 
-		Employees can enter their daily working hours, see monthly totals and overtime.
-		HR users get an overview of all employees, including targets, balances and rule violations.
+Employees can enter their daily working hours, see monthly totals and overtime.
+HR users get an overview of all employees, including targets, balances and rule violations.
+When a federal state is specified, the monthly view displays the public holidays for that federal state in the calendar (currently only German federal states are supported).
 	]]></description>
 	<description lang="de"><![CDATA[
-		Einfache Zeiterfassungs-App für Mitarbeitende und HR innerhalb von Nextcloud.
+Einfache Zeiterfassungs-App für Mitarbeitende und HR innerhalb von Nextcloud.
 
-		Mitarbeitende können ihre täglichen Arbeitszeiten erfassen, monatliche Summen und Überstunden einsehen.
-		HR-Nutzer erhalten eine Übersicht über alle Mitarbeitenden, inklusive Sollzeiten, Salden und Regelverstößen.
+Mitarbeitende können ihre täglichen Arbeitszeiten erfassen, monatliche Summen und Überstunden einsehen.
+HR-Nutzer erhalten eine Übersicht über alle Mitarbeitenden, inklusive Sollzeiten, Salden und Regelverstößen.
+Wenn ein Bundesland hinterlegt wird, zeigt die Monatsansicht die gesetzlichen Feiertage dieses Bundeslandes im Kalender an (aktuell nur deutsche Bundesländer unterstützt).
 	]]></description>
+	<screenhot small-thumbnail="https://github.com/Repa1253/timesheet/blob/main/img/thumbnail.png?raw=true">
+		https://github.com/Repa1253/timesheet/blob/main/img/image.png?raw=true
+	</screenhot>
 
-	<version>1.0.4</version>
+	<version>1.0.5</version>
 
 	<licence>agpl</licence>
 
-	<author mail="dgu@xiller.com">David Gun</author>
+	<author mail="dgu@xiller.com">David Gun (www.xiller-academy.de)</author>
 	<category>tools</category>
 
 	<bugs>https://github.com/Repa1253/timesheet/issues</bugs>

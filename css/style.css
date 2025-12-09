@@ -251,10 +251,10 @@
   flex-wrap: wrap;
 }
 
-/* Monat + Stats */
 .ts-month-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .ts-month-row-main {
@@ -306,7 +306,6 @@
 .ts-stats {
   display: flex;
   align-items: center;
-  gap: 12px;
   font-size: 0.95rem;
 }
 
@@ -342,4 +341,38 @@
 .ts-month-row-main button:hover,
 .hr-user-controls-row button:hover {
   background: var(--color-primary-hover, #006ba3);
+}
+
+#export-mine-csv {
+  margin-left: 8px;
+}
+
+#export-hr-csv {
+  border: 1px solid var(--color-background-dark, #f6f8fa);
+}
+
+.ts-hr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+#hr-stats-section {
+  background: var(--color-background-dark, #f6f8fa);
+  border: 1px solid var(--color-border, #d0d7de);
+  border-radius: 6px;
+}
+
+#hr-stats-section h4 {
+  margin: 0 5px 8px;
+  font-weight: 700;
+}
+
+#hr-stats-section .hr-stats-table th,
+#hr-stats-section .hr-stats-table td {
+  border: 1px solid var(--color-border, #e1e4e8);
+  background: var(--color-main-background, #fff);
+  padding: 4px 8px;
+  text-align: center;
 }
