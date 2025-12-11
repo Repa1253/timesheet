@@ -5,10 +5,11 @@ return [
     ['name' => 'page#index', 'url' => '/', 'verb' => 'GET'],
 
     // REST: eigene Zeiten (MA) oder alle (HR)
-    ['name' => 'entry#index',  'url' => '/api/entries',        'verb' => 'GET'],
-    ['name' => 'entry#create', 'url' => '/api/entries',        'verb' => 'POST'],
-    ['name' => 'entry#update', 'url' => '/api/entries/{id}',   'verb' => 'PUT'],
-    ['name' => 'entry#delete', 'url' => '/api/entries/{id}',   'verb' => 'DELETE'],
+    ['name' => 'entry#index',      'url' => '/api/entries',             'verb' => 'GET'],
+    ['name' => 'entry#create',     'url' => '/api/entries',             'verb' => 'POST'],
+    ['name' => 'entry#update',     'url' => '/api/entries/{id}',        'verb' => 'PUT'],
+    ['name' => 'entry#delete',     'url' => '/api/entries/{id}',        'verb' => 'DELETE'],
+    ['name' => 'entry#exportXlsx', 'url' => '/api/entries/export-xlsx', 'verb' => 'GET'],
 
     // REST: HR-Übersicht (Regelverletzungen/Anomalien)
     ['name' => 'overview#users',              'url' => '/api/hr/users',         'verb' => 'GET'],

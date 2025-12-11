@@ -17,7 +17,7 @@
         <button type="button" id="month-display" class="month-display month-display-btn">Month Year</button>
         <button type="button" class="month-nav" id="month-next">></button>
   
-        <button type="button" id="export-mine-csv" class="primary"><?php p($l->t('Export Month')) ?></button>
+        <button type="button" id="export-mine-xlsx" class="primary"><?php p($l->t('Export Month')) ?></button>
         
         <div class="ts-stats">
           <div><strong><?php p($l->t('Worked (month):')) ?></strong> <span id="worked-hours-month">--:--</span></div>
@@ -112,7 +112,7 @@
                 <td id="hr-stat-total-hours">-</td>
               </tr>
               <tr>
-                <th><?php p($l->t('Total overtime of employees')); ?></th>
+                <th><?php p($l->t('Total overtime')); ?></th>
                 <td id="hr-stat-total-overtime">-</td>
               </tr>
               <tr>
@@ -120,8 +120,16 @@
                 <td id="hr-stat-employees-overtime">-</td>
               </tr>
               <tr>
+                <th><?php p($l->t('Total negative overtime')); ?></th>
+                <td id="hr-stat-total-negative">-</td>
+              </tr>
+              <tr>
                 <th><?php p($l->t('Employees with negative overtime')); ?></th>
                 <td id="hr-stat-employees-negative">-</td>
+              </tr>
+              <tr>
+                <th><?php p($l->t('Sum of overtimes')); ?></th>
+                <td id="hr-stat-sum-overtimes">-</td>
               </tr>
             </tbody>
           </table>
@@ -135,7 +143,7 @@
         <div class="hr-user-header-bar">
           <button id="hr-back-button" class="hr-back-button"><?php p($l->t('Back')) ?></button>
           <h4 id="hr-user-title"><?php p($l->t('Entries for:')) ?> <span></span></h4>
-          <button type="button" id="export-hr-csv" class="primary"><?php p($l->t('Export Month')) ?></button>
+          <button type="button" id="export-hr-xlsx" class="primary"><?php p($l->t('Export Month')) ?></button>
         </div>
 
         <!-- Monat, Statistik und Konfiguration nebeneinander -->

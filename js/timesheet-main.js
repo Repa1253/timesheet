@@ -38,9 +38,11 @@
 
   const userListEl              = document.getElementById('hr-userlist'); // list of users for HR view
   const hrStatsTotalEl          = document.getElementById('hr-stat-total-hours'); // total hours element in HR view
-  const hrStatsOvertimeEl       = document.getElementById('hr-stat-total-overtime'); // overtime hours element in HR view
+  const hrStatsOvertimeEl       = document.getElementById('hr-stat-total-overtime'); // total overtime element in HR view
   const hrStatsNOvertimeEl      = document.getElementById('hr-stat-employees-overtime'); // number of overtime entries element in HR view
+  const hrStatsMinusOvertimeEl  = document.getElementById('hr-stat-total-negative'); // total negative hours element in HR view
   const hrStatsNMinusOvertimeEl = document.getElementById('hr-stat-employees-negative'); // number of negative overtime entries element in HR view
+  const hrStatsSumOvertimeEl    = document.getElementById('hr-stat-sum-overtimes'); // overtime sum element in HR view
 
   const dailyMinInputs = Array.from(document.querySelectorAll('.config-daily-min')); // all daily min inputs
   const stateInputs    = Array.from(document.querySelectorAll('.config-state')); // all state select inputs
@@ -200,117 +202,35 @@
     stateInputs.forEach(input => { input.value = state ?? ''; });
   }
 
-  function toCsv(rows, sep = ';') {
-    return rows.map(cols => cols.map(val => {
-      const s = val == null ? '' : String(val);
-      if (s.includes(sep) || s.includes('"') || s.includes('\n')) {
-        return '"' + s.replace(/"/g, '""') + '"';
-      }
-      return s;
-    }).join(sep)).join('\r\n');
-  }
-
-  function exportCurrentViewToCsv(isHr) {
-    const container = isHr ? hrUserEntries : document.getElementById('tab-mine');
-    if (!container) return;
-
-    const table = isHr ? container.querySelector('#hr-user-table') : container.querySelector('#ts-table');
-    if (!table) return;
-
-    const rows = [];
-
-    // 1) User
-    const userLabel = isHr 
-      ? (document.querySelector('#hr-user-title span')?.textContent || '')
-      : (typeof currentUserId !== 'undefined' ? currentUserId : '');
-
-    // 2) Worked & Overtime
-    const workedEl   = container.querySelector('#worked-hours-month');
-    const overtimeEl = container.querySelector('#overtime-month');
-    const workedMonth   = workedEl?.textContent.trim() || '';
-    const overtimeMonth = overtimeEl?.textContent.trim() || '';
-
-    // 3) Daily working time
-    const dailyMin = getEffectiveDailyMin(isHr ? container : null);
-    const dailyHm = dailyMin != null ? minToHm(dailyMin) : '';
-
-    rows.push([t('timesheet', 'User'), userLabel]);
-    rows.push([t('timesheet', 'Worked Hours'), workedMonth]);
-    rows.push([t('timesheet', 'Overtime'), overtimeMonth]);
-    rows.push([t('timesheet', 'Daily working time'), dailyHm]);
-    rows.push([]); // empty row
-
-    // 4) Table Header
-    const headerRow = [
-      t('timesheet', 'Date'),
-      "",
-      t('timesheet', 'Status'),
-      t('timesheet', 'Start'),
-      t('timesheet', 'Break (min)'),
-      t('timesheet', 'End'),
-      t('timesheet', 'Duration'),
-      t('timesheet', 'Difference'),
-      t('timesheet', 'Comment'),
-      t('timesheet', 'Warning')
-    ];
-    rows.push(headerRow);
-
-    // 5) Table Rows
-    const body = table.querySelector('tbody');
-    if (body) {
-      body.querySelectorAll('tr').forEach(tr => {
-        const cols = Array.from(tr.cells).map(td => {
-          const input = td.querySelector('input, textarea');
-          if (input) {
-            return input.value;
-          }
-          return td.textContent.trim();
-        });
-        rows.push(cols);
-      });
-    }
-
-    const csv = toCsv(rows);
-
-    const refMonth = isHr ? hrCurrentMonth : currentMonth;
-    const year = refMonth.getFullYear();
-    const month = String(refMonth.getMonth() + 1).padStart(2, '0');
-    const monthStr = `${year}-${month}`;
-
-    const baseName = isHr ? (userLabel || 'employee') : (typeof currentUserId !== 'undefined' ? currentUserId : 'me');
-
-    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `${t('timesheet', 'timesheet')}-${baseName}-${monthStr}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
   function updateHrStats() {
     if (!userListEl) return;
 
-    let totalMinutes = 0;
-    let totalOvertimeMinutes = 0;
-    let totalNOvertime = 0;
-    let totalNMinusOvertime = 0;
+    let totalMinutes = 0; // total worked minutes of all users
+    let totalOvertimeMinutes = 0; // total overtime minutes of all users
+    let totalNOvertime = 0; // number of users with overtime
+    let totalMinusOvertimeMinutes = 0; // total negative overtime minutes of all users
+    let totalNMinusOvertime = 0; // number of users with negative overtime
     userListEl.querySelectorAll('tr').forEach(tr => {
       let val = parseInt(tr.dataset.totalMinutesMonth || '0', 10);
       if (!Number.isNaN(val)) totalMinutes += val;
       
       val = hmToMin(tr.querySelector('.hr-user-balance')?.textContent || '0');
-      if (!Number.isNaN(val)) totalOvertimeMinutes += val;
-      if (!Number.isNaN(val) && val > 0) totalNOvertime++;
-      if (!Number.isNaN(val) && val < 0) totalNMinusOvertime++;
+      if (!Number.isNaN(val) && val > 0) {
+        totalOvertimeMinutes += val;
+        totalNOvertime++;
+      } 
+      if (!Number.isNaN(val) && val < 0) {
+        totalMinusOvertimeMinutes += val;
+        totalNMinusOvertime++;
+      } 
     });
 
     if (hrStatsTotalEl) hrStatsTotalEl.textContent = minToHm(totalMinutes);
     if (hrStatsOvertimeEl) hrStatsOvertimeEl.textContent = minToHm(totalOvertimeMinutes);
     if (hrStatsNOvertimeEl) hrStatsNOvertimeEl.textContent = String(totalNOvertime);
+    if (hrStatsMinusOvertimeEl) hrStatsMinusOvertimeEl.textContent = minToHm(totalMinusOvertimeMinutes);
     if (hrStatsNMinusOvertimeEl) hrStatsNMinusOvertimeEl.textContent = String(totalNMinusOvertime);
+    if (hrStatsSumOvertimeEl) hrStatsSumOvertimeEl.textContent = minToHm(totalOvertimeMinutes + totalMinusOvertimeMinutes);
   }
 
   /**
@@ -1098,12 +1018,20 @@
     await saveRowIfNeeded(row);
   });
 
-  document.getElementById('export-mine-csv')?.addEventListener('click', () => {
-    exportCurrentViewToCsv(false);
+  document.getElementById('export-mine-xlsx')?.addEventListener('click', () => {
+    const monthStr = currentMonth.toISOString().slice(0, 7);
+    const url = OC.generateUrl(`/apps/timesheet/api/entries/export-xlsx?month=${monthStr}`);
+    window.location.href = url;
   });
 
-  document.getElementById('export-hr-csv')?.addEventListener('click', () => {
-    exportCurrentViewToCsv(true);
+  document.getElementById('export-hr-xlsx')?.addEventListener('click', () => {
+    const monthStr = hrCurrentMonth.toISOString().slice(0, 7);
+    const url = OC.generateUrl(
+      `/apps/timesheet/api/entries/export-xlsx
+      ?month=${monthStr}
+      &user=${encodeURIComponent(hrUserTitle?.querySelector('span')?.textContent || '')}`
+    );
+    window.location.href = url;
   });
 
   /**
