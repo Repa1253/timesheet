@@ -121,11 +121,33 @@ class EntryController extends Controller {
     return $dt->setTime(0, 0, 0);
   }
 
-  private function makeSheetTitle(\DateTimeImmutable $monthStart): string {
+  private function resolveUserLocale(?string $override = null): string {
+    $loc = trim((string)($override ?? ''));
+
+    if ($loc === '') {
+      if (method_exists($this->l10n, 'getLocaleCode')) {
+        $loc = (string)$this->l10n->getLocaleCode();
+      } elseif (method_exists($this->l10n, 'getLanguageCode')) {
+        $loc = (string)$this->l10n->getLanguageCode();
+      }
+    }
+
+    if ($loc === '') {
+      $al = (string)$this->request->getHeader('Accept-Language');
+      if ($al !== '') {
+        $first = trim(explode(',', $al)[0]);
+        $loc = trim(explode(';', $first)[0]);
+      }
+    }
+
+    $loc = str_replace('-', '_', $loc);
+    return $loc !== '' ? $loc : 'en';
+  }
+
+  private function sheetTitleForMonth(\DateTimeImmutable $monthStart, string $locale): string {
     $raw = '';
 
     if (class_exists(\IntlDateFormatter::class)) {
-      $locale = \Locale::getDefault() ?: 'de_DE';
       $fmt = new \IntlDateFormatter(
         $locale,
         \IntlDateFormatter::NONE,
@@ -134,32 +156,20 @@ class EntryController extends Controller {
         \IntlDateFormatter::GREGORIAN,
         'LLLL yyyy'
       );
-      $raw = (string)$fmt->format($monthStart);
+      if ($fmt) {
+        $raw = (string)$fmt->format($monthStart);
+      }
     }
 
     if ($raw === '') {
-      $months = [1=>
-        $this->l10n->t('January'),
-        $this->l10n->t('February'),
-        $this->l10n->t('March'),
-        $this->l10n->t('April'),
-        $this->l10n->t('May'),
-        $this->l10n->t('June'),
-        $this->l10n->t('July'),
-        $this->l10n->t('August'),
-        $this->l10n->t('September'),
-        $this->l10n->t('October'),
-        $this->l10n->t('November'),
-        $this->l10n->t('December')];
-      $raw = ($months[(int)$monthStart->format('n')] ?? $monthStart->format('m')) . ' ' . $monthStart->format('Y');
+      $raw = $monthStart->format('MMMM yyyy');
     }
 
     $title = preg_replace('/[\\\\\\/\\?\\*\\:\\[\\]]/', ' ', $raw);
     $title = trim(preg_replace('/\\s+/', ' ', (string)$title));
-    if ($title === '') $title = $monthStart->format('Y-m');
+    if ($title === '') $title = $monthStart->format('MMMM yyyy');
 
-    if (function_exists('mb_substr')) return mb_substr($title, 0, 31, 'UTF-8');
-    return substr($title, 0, 31);
+    return function_exists('mb_substr') ? mb_substr($title, 0, 31, 'UTF-8') : substr($title, 0, 31);
   }
 
   #[NoAdminRequired]
@@ -222,6 +232,7 @@ class EntryController extends Controller {
     $holidaysByYear = [];
     $sheetIndex = 0;
 
+    $locale = $this->resolveUserLocale($this->request->getParam('locale'));
     for ($monthStart = $fromMonth; $monthStart <= $toMonth; $monthStart = $monthStart->modify('+1 month')) {
       $start = $monthStart;
       $end   = $start->modify('last day of this month');
@@ -247,7 +258,7 @@ class EntryController extends Controller {
       
       // create sheet
       $sheet = ($sheetIndex === 0) ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet($sheetIndex);
-      $sheet->setTitle($this->makeSheetTitle($start));
+      $sheet->setTitle($this->sheetTitleForMonth($start, $locale));
       $sheetIndex++;
       
       $row = 1;
@@ -419,8 +430,8 @@ class EntryController extends Controller {
     $fromLabel = $fromMonth->format('Y-m');
     $toLabel = $toMonth->format('Y-m');
     $fileName = ($fromLabel === $toLabel)
-      ? sprintf('timesheet_%s_%s.xlsx', $targetUid, $fromLabel)
-      : sprintf('timesheet_%s_%s_to_%s.xlsx', $targetUid, $fromLabel, $toLabel);
+      ? sprintf($this->l10n->t('timesheet_%s_%s.xlsx', [$targetUid, $fromLabel]))
+      : sprintf($this->l10n->t('timesheet_%s_%s_to_%s.xlsx', [$targetUid, $fromLabel, $toLabel]));
 
     // 8. return response
     return new DataDownloadResponse(
