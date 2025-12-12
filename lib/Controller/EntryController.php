@@ -106,9 +106,67 @@ class EntryController extends Controller {
     return max(0, $h*60 + $m);
   }
 
+  private static function parseMonthStart(?string $monthStr, \DateTimeZone $tz): \DateTimeImmutable {
+    $m = trim((string)($monthStr ?? ''));
+    if ($m === '') {
+      $m = (new \DateTimeImmutable('now', $tz))->format('Y-m');
+    }
+
+    $dt = \DateTimeImmutable::createFromFormat('!Y-m-d', $m . '-01', $tz);
+    if (!$dt) {
+      $dt = new \DateTimeImmutable('first day of this month', $tz);
+      $dt = $dt->setDate((int)$dt->format('Y'), (int)$dt->format('m'), 1);
+    }
+
+    return $dt->setTime(0, 0, 0);
+  }
+
+  private function makeSheetTitle(\DateTimeImmutable $monthStart): string {
+    $raw = '';
+
+    if (class_exists(\IntlDateFormatter::class)) {
+      $locale = \Locale::getDefault() ?: 'de_DE';
+      $fmt = new \IntlDateFormatter(
+        $locale,
+        \IntlDateFormatter::NONE,
+        \IntlDateFormatter::NONE,
+        $monthStart->getTimezone()->getName(),
+        \IntlDateFormatter::GREGORIAN,
+        'LLLL yyyy'
+      );
+      $raw = (string)$fmt->format($monthStart);
+    }
+
+    if ($raw === '') {
+      $months = [1=>
+        $this->l10n->t('January'),
+        $this->l10n->t('February'),
+        $this->l10n->t('March'),
+        $this->l10n->t('April'),
+        $this->l10n->t('May'),
+        $this->l10n->t('June'),
+        $this->l10n->t('July'),
+        $this->l10n->t('August'),
+        $this->l10n->t('September'),
+        $this->l10n->t('October'),
+        $this->l10n->t('November'),
+        $this->l10n->t('December')];
+      $raw = ($months[(int)$monthStart->format('n')] ?? $monthStart->format('m')) . ' ' . $monthStart->format('Y');
+    }
+
+    $title = preg_replace('/[\\\\\\/\\?\\*\\:\\[\\]]/', ' ', $raw);
+    $title = trim(preg_replace('/\\s+/', ' ', (string)$title));
+    if ($title === '') $title = $monthStart->format('Y-m');
+
+    if (function_exists('mb_substr')) return mb_substr($title, 0, 31, 'UTF-8');
+    return substr($title, 0, 31);
+  }
+
   #[NoAdminRequired]
   #[NoCSRFRequired]
-  public function exportXlsx(?string $month = null, ?string $user = null): DataDownloadResponse {
+  public function exportXlsx(?string $from = null, ?string $to = null, ?string $user = null): DataDownloadResponse {
+    $tz = new \DateTimeZone('Europe/Berlin');
+
     // 1. determine current user
     $currentUser = $this->userSession->getUser();
     if (!$currentUser) {
@@ -126,16 +184,25 @@ class EntryController extends Controller {
     }
 
     // 3. parse month
-    $monthStr = $month ?: (new \DateTimeImmutable('now'))->format('Y-m');
-    $monthDate = \DateTimeImmutable::createFromFormat('Y-m', $monthStr);
-    if (!$monthDate) {
-      $monthDate = new \DateTimeImmutable(date('Y-m-01'));
-      $monthStr = $monthDate->format('Y-m');
+    if (trim((string)($from ?? '')) === '' && trim((string)($to ?? '')) == '') {
+      $legacyMonth = $this->request->getParam('month');
+      if (is_string($legacyMonth) && trim($legacyMonth) !== '') {
+        $from = $legacyMonth;
+        $to = $legacyMonth;
+      }
     }
-    $start = $monthDate->setDate((int)$monthDate->format('Y'), (int)$monthDate->format('m'), 1);
-    $end = $start->modify('last day of this month');
-    $from = $start->format('Y-m-d');
-    $to = $end->format('Y-m-d');
+    if (trim((string)($from ?? '')) === '' && trim((string)($to ?? '')) !== '') {
+      $from = trim((string)$to);
+    }
+    if (trim((string)($to ?? '')) === '' && trim((string)($from ?? '')) !== '') {
+      $to = trim((string)$from);
+    }
+
+    $fromMonth = self::parseMonthStart($from, $tz);
+    $toMonth = self::parseMonthStart($to, $tz);
+    if ($fromMonth > $toMonth) {
+      [$fromMonth, $toMonth] = [$toMonth, $fromMonth];
+    }
 
     // 4. load user config
     try {
@@ -146,224 +213,216 @@ class EntryController extends Controller {
     $dailyMinMinutes = $cfg?->getWorkMinutes() ?? 480; // default 8 hours
     $state = $cfg?->getState() ?? '';
 
-    // 5. load entries
-    $entries = $this->entryMapper->findByUserAndRange($targetUid, $from, $to);
-
-    $entriesByDate = [];
-    foreach ($entries as $entry) {
-      $entriesByDate[$entry->getWorkDate()] = $entry;
-    }
-
-    // 6. load holidays
-    $holidays = [];
-    if ($state !== '') {
-      $year = (int)$start->format('Y');
-      $holidays = $this->holidayService->getHolidays($year, $state);
-    }
-
-    // 7. process entries
-    foreach ($entriesByDate as $dateStr => $entry) {
-      $startMin = $entry->getStartMin();
-      $endMin = $entry->getEndMin();
-      if ($startMin === null || $endMin === null) {
-        continue;
-      }
-      $breakMin = $entry->getBreakMinutes() ?? 0;
-    }
-
-    // 8. generate spreadsheet
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-    $sheet->setTitle($monthDate->format('F Y'));
-
-    $row = 1;
-
-    // Header
-    $sheet->setCellValue("A{$row}", $this->l10n->t('Employee'));
-    $sheet->mergeCells("A{$row}:B{$row}");
-    $sheet->setCellValue("C{$row}", $targetUid);
-    $row++;
-
-    $sheet->setCellValue("A{$row}", $this->l10n->t('Worked Hours'));
-    $sheet->mergeCells("A{$row}:B{$row}");
-    $workedHoursRow = $row;
-    $row++;
-
-    $sheet->setCellValue("A{$row}", $this->l10n->t('Overtime'));
-    $sheet->mergeCells("A{$row}:B{$row}");
-    $overtimeRow = $row;
-    $row++;
-
-    $sheet->setCellValue("A{$row}", $this->l10n->t('Daily working time'));
-    $sheet->mergeCells("A{$row}:B{$row}");
-    $sheet->setCellValue("C{$row}", $dailyMinMinutes / 1440);
-    $sheet->getStyle("C{$row}")
-      ->getNumberFormat()->setFormatCode('[HH]:MM');
-    $dailyRow = $row;
-
-    $sheet->getStyle("A1:C{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-    $row += 2;
-
-    // Table header
-    $headerRow = $row;
-
-    $sheet->setCellValue("A{$row}", $this->l10n->t('Date'));
-    $sheet->mergeCells("A{$row}:B{$row}");
-    // empty for weekday
-    $sheet->setCellValue("C{$row}", $this->l10n->t('Status'));
-    $sheet->setCellValue("D{$row}", $this->l10n->t('Start'));
-    $sheet->setCellValue("E{$row}", $this->l10n->t('Break (min)'));
-    $sheet->setCellValue("F{$row}", $this->l10n->t('End'));
-    $sheet->setCellValue("G{$row}", $this->l10n->t('Duration'));
-    $sheet->setCellValue("H{$row}", $this->l10n->t('Difference'));
-    $sheet->setCellValue("I{$row}", $this->l10n->t('Comment'));
-    $sheet->setCellValue("J{$row}", $this->l10n->t('Warning'));
-
-    // header bold + background
-    $sheet->getStyle("A{$row}:J{$row}")->getFont()->setBold(true);
-    $sheet->getStyle("A{$row}:J{$row}")
-      ->getFill()->setFillType(Fill::FILL_SOLID)
-      ->getStartColor()->setRGB('EEEEEE');
-    $sheet->getStyle("A{$row}:J{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-    $row++;
-    $firstDataRow = $row;
-
-    // 9. fill data rows
-    for ($d = $start; $d <= $end; $d = $d->modify('+1 day')) {
-      $dateStr = $d->format('Y-m-d');
-      
-      /** @var Entry|null $entry */
-      $entry = $entriesByDate[$dateStr] ?? null;
-
-      // Date and Weekday
-      $sheet->setCellValue("A{$row}", Date::PHPToExcel($d->setTime(0,0,0)));
-      $sheet->getStyle("A{$row}")->getNumberFormat()->setFormatCode('DD.MM.YYYY');
-      $dayIndex = (int)$d->format('w'); // 0 (Sun) to 6 (Sat)
-      $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      $weekdayKey = $weekdays[$dayIndex] ?? '';
-      $weekday = $weekdayKey !== '' ? $this->l10n->t($weekdayKey) : '';
-      $sheet->setCellValue("B{$row}", $weekday);
-
-      $isWeekend = ($dayIndex === 0 || $dayIndex === 6);
-      $isHoliday = isset($holidays[$dateStr]);
-
-      $status = '';
-      if ($isHoliday) {
-        $status = $this->l10n->t('Holiday');
-      } elseif ($isWeekend) {
-        $status = $this->l10n->t('Weekend');
-      }
-      $sheet->setCellValue("C{$row}", $status);
-
-      $startMin = null;
-      $endMin = null;
-      $breakMin = 0;
-      $comment = '';
-
-      if ($entry) {
-        $startMin = $entry->getStartMin();
-        $endMin = $entry->getEndMin();
-        $breakMin = $entry->getBreakMinutes() ?? 0;
-        $comment = (string)$entry->getComment();
-      }
-        
-      if ($startMin !== null && $endMin !== null) {
-        $sheet->setCellValue("D{$row}", $startMin / 1440);
-        $sheet->setCellValue("F{$row}", $endMin / 1440);
-      } else {
-        $sheet->setCellValue("D{$row}", null);
-        $sheet->setCellValue("F{$row}", null);
-      }
-
-      // Break in minutes
-      $sheet->setCellValue("E{$row}", $breakMin);
-
-      // Duration formula
-      $durationFormula = '=IF(AND(D' . $row . '<>"",F' . $row . '<>""),(F' . $row . '-D' . $row . '-E' . $row . '/1440),"")';
-      $sheet->setCellValue("G{$row}", $durationFormula);
-
-      // Difference formula
-      $diffFormula = 
-        '=IF(G' . $row . '="","",' .
-          'IF(G' . $row . '<$C$' . $dailyRow .
-          ',"-"&TEXT($C$' . $dailyRow . '-G' . $row . ',"hh:mm"),' .
-          'TEXT(G' . $row . '-$C$' . $dailyRow . ',"hh:mm")' .
-        '))';
-      $sheet->setCellValue("H{$row}", $diffFormula);
-
-      // Comment
-      $sheet->setCellValue("I{$row}", $comment);
-
-      // Warning formula
-      $breakExpr = 'IF(G' . $row . '>TIME(9,0,0),IF(E' . $row . '<45,"Break too short",""),IF(G' . $row . '>TIME(6,0,0),IF(E' . $row . '<30,"Break too short",""),""))';
-      $warningFormula = 
-        '=IF(G' . $row . '="","",TEXTJOIN(", ",TRUE,' .
-          'IF(G' . $row . '>TIME(10,0,0),"Above maximum time",""),' .
-          $breakExpr . ',' .
-          'IF(AND(WEEKDAY(A' . $row . ',2)=7,G' . $row . '>0),"Sunday work not allowed",""),' .
-          'IF(C' . $row . '="Holiday","Holiday work not allowed","")' .
-        '))';
-      $sheet->setCellValue("J{$row}", $warningFormula);
-
-      // Highlight weekends and holidays
-      if ($isWeekend || $isHoliday) {
-        $sheet->getStyle("A{$row}:J{$row}")
-          ->getFill()->setFillType(Fill::FILL_SOLID)
-          ->getStartColor()->setRGB('F9F9F9');
-      }
-
-      $sheet->getStyle("A{$row}:I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-      $row++;
-    }
-
-    $lastDataRow = $row - 1;
-
-    // Set worked hours and overtime values
-    $sheet->setCellValue("C{$workedHoursRow}", "=SUM(G{$firstDataRow}:G{$lastDataRow})");
-    $sheet->setCellValue("C{$overtimeRow}", "=SUM(H{$firstDataRow}:H{$lastDataRow})");
-    $sheet->getStyle("C{$workedHoursRow}:C{$overtimeRow}")
-      ->getNumberFormat()->setFormatCode('[HH]:MM');
-
-    // format date column
-    $sheet->getStyle("A" . ($headerRow + 1) . ":A" . ($lastDataRow))
-      ->getNumberFormat()->setFormatCode('DD.MM.YYYY');
-
-    // format time columns
-    $sheet->getStyle("D" . $firstDataRow . ":F" . $lastDataRow)
-      ->getNumberFormat()->setFormatCode('HH:MM');
-
-    // format break column
-    $sheet->getStyle("E" . $firstDataRow . ":E" . $lastDataRow)
-      ->getNumberFormat()->setFormatCode('0');
-
-    // format duration and difference columns
-    $sheet->getStyle("G" . $firstDataRow . ":H" . $lastDataRow)
-      ->getNumberFormat()->setFormatCode('[HH]:MM');
-
-    // Footer: export timestamp
-    $row++;
-    $tz = new \DateTimeZone('Europe/Berlin');
+    // 5. export timestamp
     $exportDate = new \DateTimeImmutable('now', $tz);
     $exportLabel = $this->l10n->t('Exported: %s', [$exportDate->format('d.m.Y H:i T')]);
-    $sheet->setCellValue("A{$row}", $exportLabel);
-    $sheet->mergeCells("A{$row}:C{$row}");
 
-    // Auto size columns
-    foreach (range('A', 'J') as $col) {
-      $sheet->getColumnDimension($col)->setAutoSize(true);
+    // 6. build workbook
+    $spreadsheet = new Spreadsheet();
+    $holidaysByYear = [];
+    $sheetIndex = 0;
+
+    for ($monthStart = $fromMonth; $monthStart <= $toMonth; $monthStart = $monthStart->modify('+1 month')) {
+      $start = $monthStart;
+      $end   = $start->modify('last day of this month');
+      $fromDate = $start->format('Y-m-d');
+      $toDate   = $end->format('Y-m-d');
+
+      // load entries for month
+      $entries = $this->entryMapper->findByUserAndRange($targetUid, $fromDate, $toDate);
+      $entriesByDate = [];
+      foreach ($entries as $entry) {
+        $entriesByDate[$entry->getWorkDate()] = $entry;
+      }
+
+      // load holidays for month
+      $holidays = [];
+      if ($state !== '') {
+        $year = (int)$start->format('Y');
+        if (!array_key_exists($year, $holidaysByYear)) {
+          $holidaysByYear[$year] = $this->holidayService->getHolidays($year, $state);
+        }
+        $holidays = $holidaysByYear[$year];
+      }
+      
+      // create sheet
+      $sheet = ($sheetIndex === 0) ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet($sheetIndex);
+      $sheet->setTitle($this->makeSheetTitle($start));
+      $sheetIndex++;
+      
+      $row = 1;
+      
+      // Header
+      $sheet->setCellValue("A{$row}", $this->l10n->t('Employee'));
+      $sheet->mergeCells("A{$row}:B{$row}");
+      $sheet->setCellValue("C{$row}", $targetUid);
+      $row++;
+      
+      $sheet->setCellValue("A{$row}", $this->l10n->t('Worked Hours'));
+      $sheet->mergeCells("A{$row}:B{$row}");
+      $workedHoursRow = $row;
+      $row++;
+      
+      $sheet->setCellValue("A{$row}", $this->l10n->t('Overtime'));
+      $sheet->mergeCells("A{$row}:B{$row}");
+      $overtimeRow = $row;
+      $row++;
+      
+      $sheet->setCellValue("A{$row}", $this->l10n->t('Daily working time'));
+      $sheet->mergeCells("A{$row}:B{$row}");
+      $sheet->setCellValue("C{$row}", $dailyMinMinutes / 1440);
+      $sheet->getStyle("C{$row}")
+      ->getNumberFormat()->setFormatCode('[HH]:MM');
+      $dailyRow = $row;
+      
+      $sheet->getStyle("A1:C{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+      $row += 2;
+      
+      // Table header
+      $headerRow = $row;
+      
+      $sheet->setCellValue("A{$row}", $this->l10n->t('Date'));
+      $sheet->mergeCells("A{$row}:B{$row}");
+      // empty for weekday
+      $sheet->setCellValue("C{$row}", $this->l10n->t('Status'));
+      $sheet->setCellValue("D{$row}", $this->l10n->t('Start'));
+      $sheet->setCellValue("E{$row}", $this->l10n->t('Break (min)'));
+      $sheet->setCellValue("F{$row}", $this->l10n->t('End'));
+      $sheet->setCellValue("G{$row}", $this->l10n->t('Duration'));
+      $sheet->setCellValue("H{$row}", $this->l10n->t('Difference'));
+      $sheet->setCellValue("I{$row}", $this->l10n->t('Comment'));
+      $sheet->setCellValue("J{$row}", $this->l10n->t('Warning'));
+
+      $sheet->getStyle("A{$row}:J{$row}")->getFont()->setBold(true);
+      $sheet->getStyle("A{$row}:J{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('EEEEEE');
+      $sheet->getStyle("A{$row}:J{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+      $row++; 
+      $firstDataRow = $row;
+      
+      // Fill data rows
+      for ($d = $start; $d <= $end; $d = $d->modify('+1 day')) {
+        $dateStr = $d->format('Y-m-d');
+        $entry = $entriesByDate[$dateStr] ?? null;
+        
+        $sheet->setCellValue("A{$row}", Date::PHPToExcel($d->setTime(0,0,0)));
+        $sheet->getStyle("A{$row}")->getNumberFormat()->setFormatCode('DD.MM.YYYY');
+
+        $dayIndex = (int)$d->format('w');
+        $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        $weekdayKey = $weekdays[$dayIndex] ?? '';
+        $weekday = $weekdayKey !== '' ? $this->l10n->t($weekdayKey) : '';
+        $sheet->setCellValue("B{$row}", $weekday);
+        
+        $isWeekend = ($dayIndex === 0 || $dayIndex === 6);
+        $isHoliday = isset($holidays[$dateStr]);
+        
+        $status = '';
+        if ($isHoliday) {
+          $status = $this->l10n->t('Holiday');
+        } elseif ($isWeekend) {
+          $status = $this->l10n->t('Weekend');
+        }
+        $sheet->setCellValue("C{$row}", $status);
+        
+        $startMin = null;
+        $endMin = null;
+        $breakMin = 0;
+        $comment = '';
+        
+        if ($entry) {
+          $startMin = $entry->getStartMin();
+          $endMin = $entry->getEndMin();
+          $breakMin = $entry->getBreakMinutes() ?? 0;
+          $comment = (string)$entry->getComment();
+        }
+        
+        if ($startMin !== null && $endMin !== null) {
+          $sheet->setCellValue("D{$row}", $startMin / 1440);
+          $sheet->setCellValue("F{$row}", $endMin / 1440);
+        } else {
+          $sheet->setCellValue("D{$row}", null);
+          $sheet->setCellValue("F{$row}", null);
+        }
+        
+        // Break in minutes
+        $sheet->setCellValue("E{$row}", $breakMin);
+        
+        // Duration formula
+        $durationFormula = '=IF(AND(D' . $row . '<>"",F' . $row . '<>""),(F' . $row . '-D' . $row . '-E' . $row . '/1440),"")';
+        $sheet->setCellValue("G{$row}", $durationFormula);
+        
+        // Difference formula
+        $diffFormula = 
+        '=IF(G' . $row . '="","",' .
+        'IF(G' . $row . '<$C$' . $dailyRow .
+        ',"-"&TEXT($C$' . $dailyRow . '-G' . $row . ',"hh:mm"),' .
+        'TEXT(G' . $row . '-$C$' . $dailyRow . ',"hh:mm")' .
+        '))';
+        $sheet->setCellValue("H{$row}", $diffFormula);
+        
+        // Comment
+        $sheet->setCellValue("I{$row}", $comment);
+        
+        // Warning formula
+        $breakExpr = 'IF(G' . $row . '>TIME(9,0,0),IF(E' . $row . '<45,"Break too short",""),IF(G' . $row . '>TIME(6,0,0),IF(E' . $row . '<30,"Break too short",""),""))';
+        $warningFormula = 
+        '=IF(G' . $row . '="","",TEXTJOIN(", ",TRUE,' .
+        'IF(G' . $row . '>TIME(10,0,0),"Above maximum time",""),' .
+        $breakExpr . ',' .
+        'IF(AND(WEEKDAY(A' . $row . ',2)=7,G' . $row . '>0),"Sunday work not allowed",""),' .
+        'IF(C' . $row . '="Holiday","Holiday work not allowed","")' .
+        '))';
+        $sheet->setCellValue("J{$row}", $warningFormula);
+        
+        // Highlight weekends and holidays
+        if ($isWeekend || $isHoliday) {
+          $sheet->getStyle("A{$row}:J{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9F9F9');
+        }
+        
+        $sheet->getStyle("A{$row}:I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
+      }
+      
+      $lastDataRow = $row - 1;
+      
+      // Set worked hours and overtime values
+      $sheet->setCellValue("C{$workedHoursRow}", "=SUM(G{$firstDataRow}:G{$lastDataRow})");
+      $sheet->setCellValue("C{$overtimeRow}", "=SUM(H{$firstDataRow}:H{$lastDataRow})");
+      $sheet->getStyle("C{$workedHoursRow}:C{$overtimeRow}")->getNumberFormat()->setFormatCode('[HH]:MM');
+      
+      // Set number formats
+      $sheet->getStyle("A" . ($headerRow + 1) . ":A" . ($lastDataRow))->getNumberFormat()->setFormatCode('DD.MM.YYYY');
+      $sheet->getStyle("D" . $firstDataRow . ":F" . $lastDataRow)->getNumberFormat()->setFormatCode('HH:MM');
+      $sheet->getStyle("E" . $firstDataRow . ":E" . $lastDataRow)->getNumberFormat()->setFormatCode('0');
+      $sheet->getStyle("G" . $firstDataRow . ":H" . $lastDataRow)->getNumberFormat()->setFormatCode('[HH]:MM');
+      
+      // Export timestamp
+      $row++;
+      $sheet->setCellValue("A{$row}", $exportLabel);
+      $sheet->mergeCells("A{$row}:C{$row}");
+      
+      // Auto size columns
+      foreach (range('A', 'J') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+      }
     }
 
-    // 10. save to temp file
+    $spreadsheet->setActiveSheetIndex(0);
+
+    // 7. save to temp file
     $writer = new Xlsx($spreadsheet);
     ob_start();
     $writer->save('php://output');
     $binary = ob_get_clean();
 
-    $fileName = sprintf('timesheet_%s.xlsx', $targetUid);
+    $fromLabel = $fromMonth->format('Y-m');
+    $toLabel = $toMonth->format('Y-m');
+    $fileName = ($fromLabel === $toLabel)
+      ? sprintf('timesheet_%s_%s.xlsx', $targetUid, $fromLabel)
+      : sprintf('timesheet_%s_%s_to_%s.xlsx', $targetUid, $fromLabel, $toLabel);
 
-    // 11. return response
+    // 8. return response
     return new DataDownloadResponse(
       $binary,
       $fileName,

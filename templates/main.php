@@ -128,7 +128,7 @@
                 <td id="hr-stat-employees-negative">-</td>
               </tr>
               <tr>
-                <th><?php p($l->t('Sum of overtimes')); ?></th>
+                <th><?php p($l->t('Sum of +/- overtimes')); ?></th>
                 <td id="hr-stat-sum-overtimes">-</td>
               </tr>
             </tbody>

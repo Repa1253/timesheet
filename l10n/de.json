@@ -57,7 +57,9 @@
     "Daily working time": "Arbeitszeit",
     "Holiday": "Feiertag",
     "Weekend": "Wochenende",
-    "Exported: %s": "Exportiert: %s"
+    "Exported: %s": "Exportiert: %s",
+    "timesheet_%s_%s.xlsx": "Arbeitszeitnachweis_%s_%s.xlsx",
+    "timesheet_%s_%s_to_%s.xlsx": "Arbeitszeitnachweis_%s_%s_bis_%s.xlsx"
   },
   "pluralForm": "nplurals=2; plural=(n != 1);"
 }

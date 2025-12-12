@@ -23,17 +23,12 @@ Mitarbeitende können ihre täglichen Arbeitszeiten erfassen, monatliche Summen 
 HR-Nutzer erhalten eine Übersicht über alle Mitarbeitenden, inklusive Sollzeiten, Salden und Regelverstößen.
 Wenn ein Bundesland hinterlegt wird, zeigt die Monatsansicht die gesetzlichen Feiertage dieses Bundeslandes im Kalender an (aktuell nur deutsche Bundesländer unterstützt).
 	]]></description>
-	<screenhot small-thumbnail="https://github.com/Repa1253/timesheet/blob/main/img/thumbnail.png?raw=true">
-		https://github.com/Repa1253/timesheet/blob/main/img/image.png?raw=true
-	</screenhot>
+	<screenhot>https://raw.githubusercontent.com/Repa1253/timesheet/refs/heads/main/img/image.png</screenhot>
 
-	<version>1.0.5</version>
-
+	<version>1.0.6</version>
 	<licence>agpl</licence>
-
 	<author mail="dgu@xiller.com">David Gun (www.xiller-academy.de)</author>
 	<category>tools</category>
-
 	<bugs>https://github.com/Repa1253/timesheet/issues</bugs>
 
 	<dependencies>
