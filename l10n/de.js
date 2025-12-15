@@ -32,6 +32,7 @@ OC.L10N.register(
     "Comment": "Kommentar",
     "Warning": "Warnung",
     "timesheet": "Stundenzettel",
+    "Copied to clipboard": "In die Zwischenablage kopiert",
   },
   "nplurals=2; plural=(n != 1);"
 );

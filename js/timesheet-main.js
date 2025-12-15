@@ -51,6 +51,10 @@
   // Short alias for querySelector (for convenience in this script)
   const $ = (sel) => document.querySelector(sel);
 
+  // Timesheet row hover tracking
+  let tsHoveredRow = null;
+  const TS_ROW_SCOPE = '#tab-mine tbody tr, #tab-hr tbody tr, #hr-user-entries tbody tr';
+
   /**
   * Utility Functions 
   */
@@ -231,6 +235,19 @@
     if (hrStatsMinusOvertimeEl) hrStatsMinusOvertimeEl.textContent = minToHm(totalMinusOvertimeMinutes);
     if (hrStatsNMinusOvertimeEl) hrStatsNMinusOvertimeEl.textContent = String(totalNMinusOvertime);
     if (hrStatsSumOvertimeEl) hrStatsSumOvertimeEl.textContent = minToHm(totalOvertimeMinutes + totalMinusOvertimeMinutes);
+  }
+
+  function hasSelection() {
+    const sel = window.getSelection?.();
+    return !!sel && String(sel).trim() !== '';
+  }
+
+  function isTimesheetCellField(el) {
+    if (!el || !el.classList) return false;
+    return el.classList.contains('startTime')
+      || el.classList.contains('endTime')
+      || el.classList.contains('breakMinutes')
+      || el.classList.contains('commentInput');
   }
 
   /**
@@ -1125,6 +1142,55 @@
         loadHrUserList();
       }
     });
+  });
+
+  document.addEventListener('pointerover', (e) => {
+    const row = e.target.closest(TS_ROW_SCOPE);
+    if (row) tsHoveredRow = row;
+  });
+
+  document.addEventListener('pointerout', (e) => {
+    const row = e.target.closest(TS_ROW_SCOPE);
+    if (row && tsHoveredRow === row) tsHoveredRow = null;
+  });
+
+  // Copy handler to copy the currently hovered row as TSV to clipboard
+  document.addEventListener('copy', (e) => {
+    const el = document.activeElement;
+
+    // Cell Copy: if focused element is input/textarea in a timesheet row, copy its value only
+    const tag = (el?.tagName || '').toUpperCase();
+    const isInputLike = tag === 'INPUT' || tag === 'TEXTAREA';
+    if (isInputLike && isTimesheetCellField(el)) {
+      if (typeof el?.selectionStart === 'number'
+        && typeof el?.selectionEnd === 'number'
+        && el.selectionEnd > el.selectionStart
+      ) return; // user has selected text in input/textarea -> don't interfere
+      if (!e.clipboardData) return; // no clipboardData -> can't set data
+
+      e.clipboardData.setData('text/plain', String(el.value ?? ''));
+      e.preventDefault();
+      window.OC?.Notification?.showTemporary(t('timesheet', 'Copied to clipboard'));
+      return;
+    }
+
+    // Row Copy: if not in an input/textarea, copy the entire hovered row
+    const inEditable = isInputLike || !!el?.isContentEditable;
+    if (inEditable) return; // don't interfere with other editable elements
+
+    if (!tsHoveredRow) return; // no row hovered -> nothing to copy
+    if (hasSelection()) return; // user has selected text -> don't interfere
+    if (!e.clipboardData) return; // no clipboardData -> can't set data
+
+    const start = (tsHoveredRow.querySelector('.startTime')?.value || '').trim();
+    const brk = (tsHoveredRow.querySelector('.breakMinutes')?.value || '').trim();
+    const end = (tsHoveredRow.querySelector('.endTime')?.value || '').trim();
+    let comment = (tsHoveredRow.querySelector('.commentInput')?.value || '').trim();
+    comment = comment.replace(/\t/g, ' ').replace(/\r?\n/g, ' '); // remove tabs/newlines
+
+    e.clipboardData.setData('text/plain', [start, brk, end, comment].join('\t'));
+    e.preventDefault();
+    window.OC?.Notification?.showTemporary(t('timesheet', 'Row copied to clipboard'));
   });
 
   // Save current user's config (dailyMin and state) – accessible to both normal user and HR (for their own config)
