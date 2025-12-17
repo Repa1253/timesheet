@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [1.0.6]
+### Added
+- **Excel (XLSX) export** for time entries.
+- **Flexible HR access rules:** admins can define which HR groups are allowed to view which employee groups.
+
+### Improved
+- **Date range selection** for excel exports to include multiple months.
+
 ## [1.0.5]
 ### Added
 - New HR statistics panel in the HR view: shows total working hours, total overtime, and how many employees currently have positive or negative overtime for the selected month.
