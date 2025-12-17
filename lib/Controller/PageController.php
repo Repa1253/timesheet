@@ -24,9 +24,17 @@ class PageController extends Controller {
 	#[NoCSRFRequired]
 	public function index(): TemplateResponse {
 		Util::addScript('core', 'l10n');
-		Util::addScript('timesheet', 'timesheet-main');
-		Util::addStyle('timesheet', 'style');
 		Util::addTranslations('timesheet');
+
+		Util::addScript('timesheet', 'timesheet-core');
+		Util::addScript('timesheet', 'timesheet-entries');
+		Util::addScript('timesheet', 'timesheet-hr');
+		Util::addScript('timesheet', 'timesheet-export');
+		Util::addScript('timesheet', 'timesheet-copy');
+		Util::addScript('timesheet', 'timesheet-config');
+		Util::addScript('timesheet', 'timesheet-main');
+
+		Util::addStyle('timesheet', 'style');
 
 		return new TemplateResponse($this->appName, 'main', [
 			'isHR' => $this->hrService->isHr()

@@ -391,7 +391,7 @@ class EntryController extends Controller {
           $sheet->getStyle("A{$row}:J{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9F9F9');
         }
         
-        $sheet->getStyle("A{$row}:I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A{$row}:H{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $row++;
       }
       
@@ -414,9 +414,12 @@ class EntryController extends Controller {
       $sheet->mergeCells("A{$row}:C{$row}");
       
       // Auto size columns
-      foreach (range('A', 'J') as $col) {
+      foreach (range('A', 'H') as $col) {
         $sheet->getColumnDimension($col)->setAutoSize(true);
       }
+      $sheet->getColumnDimension('I')->setWidth(40);
+      $sheet->getColumnDimension('J')->setWidth(50);
+      $sheet->getStyle("I{$firstDataRow}:J{$lastDataRow}")->getAlignment()->setWrapText(true);
     }
 
     $spreadsheet->setActiveSheetIndex(0);
