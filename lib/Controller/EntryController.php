@@ -396,10 +396,15 @@ class EntryController extends Controller {
       }
       
       $lastDataRow = $row - 1;
+
+      $durSum = "SUM(G{$firstDataRow}:G{$lastDataRow})";
+      $days = "COUNT(G{$firstDataRow}:G{$lastDataRow})";
+      $exp = "(\$C\${$dailyRow}*{$days})";
+      $diff = "({$durSum}-{$exp})";
       
       // Set worked hours and overtime values
       $sheet->setCellValue("C{$workedHoursRow}", "=SUM(G{$firstDataRow}:G{$lastDataRow})");
-      $sheet->setCellValue("C{$overtimeRow}", "=SUM(H{$firstDataRow}:H{$lastDataRow})");
+      $sheet->setCellValue("C{$overtimeRow}", "=IF({$days}=0,\"\",IF({$diff}<0,\"-\"&TEXT(-{$diff},\"[hh]:mm\"),TEXT({$diff},\"[hh]:mm\")))");
       $sheet->getStyle("C{$workedHoursRow}:C{$overtimeRow}")->getNumberFormat()->setFormatCode('[HH]:MM');
       
       // Set number formats
@@ -433,8 +438,8 @@ class EntryController extends Controller {
     $fromLabel = $fromMonth->format('Y-m');
     $toLabel = $toMonth->format('Y-m');
     $fileName = ($fromLabel === $toLabel)
-      ? sprintf($this->l10n->t('timesheet_%s_%s.xlsx', [$targetUid, $fromLabel]))
-      : sprintf($this->l10n->t('timesheet_%s_%s_to_%s.xlsx', [$targetUid, $fromLabel, $toLabel]));
+      ? sprintf($this->l10n->t('Timesheet_%s_%s.xlsx', [$targetUid, $fromLabel]))
+      : sprintf($this->l10n->t('Timesheet_%s_%s_to_%s.xlsx', [$targetUid, $fromLabel, $toLabel]));
 
     // 8. return response
     return new DataDownloadResponse(

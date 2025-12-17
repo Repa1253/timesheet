@@ -116,7 +116,7 @@
     tbody.querySelectorAll('tr').forEach(row => {
       const durText = row.querySelector('.ts-duration')?.textContent.trim();
       const durMin  = U.hmToMin(durText);
-      if (durMin && durMin > 0) {
+      if (durMin != null) {
         totalMinutes += durMin;
         workedDays++;
       }

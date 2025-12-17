@@ -83,10 +83,7 @@
 
     container = document.createElement('span');
     container.id = uiId;
-    container.style.display = 'none';
-    container.style.alignItems = 'center';
-    container.style.gap = '6px';
-    container.style.marginLeft = '8px';
+    container.className = 'ts-export-range-ui';
 
     const makeBtn = (text, title, action) => {
       const b = document.createElement('button');
@@ -95,8 +92,7 @@
       b.title = title;
       b.dataset.action = action;
       b.className = 'primary';
-      b.style.padding = '2px 8px';
-      b.style.lineHeight = '1.2';
+
       return b;
     };
 
@@ -105,8 +101,6 @@
 
     const label = document.createElement('span');
     label.className = 'ts-export-range-label';
-    label.style.whiteSpace = 'nowrap';
-    label.style.padding = '0 4px';
 
     const toPrev = makeBtn('«', t(S.appName, 'End month: previous'), 'to-prev');
     const toNext = makeBtn('»', t(S.appName, 'End month: next'), 'to-next');
@@ -118,12 +112,12 @@
     container.appendChild(toNext);
 
     exportBtn.insertAdjacentElement('afterend', container);
-    
+
     const ui = { container, fromPrev, fromNext, toPrev, toNext, label };
     exportRanges[kind].ui = ui;
-    
+
     applyFixedRangeLabelWidth(kind);
-    
+
     const shift = (which, delta) => {
       const st = exportRanges[kind];
       if (!st.from || !st.to) return;
@@ -153,7 +147,7 @@
     const ui = st.ui || ensureExportRangeUi(kind);
     if (!ui || !st.from || !st.to) return;
 
-    ui.container.style.display = 'inline-flex';
+    ui.container.classList.add('is-visible');
 
     const sameMonth = 
       st.from.getFullYear() === st.to.getFullYear() && 
@@ -170,7 +164,7 @@
     st.armed = false;
     st.from = null;
     st.to = null;
-    if (st.ui?.container) st.ui.container.style.display = 'none';
+    if (st.ui?.container) st.ui.container.classList.remove('is-visible');
   }
 
   // Handle export button click

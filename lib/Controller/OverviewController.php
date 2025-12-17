@@ -18,9 +18,6 @@ use OCA\Timesheet\Service\HrService;
 
 class OverviewController extends Controller {
 
-  /** @var string[] */
-  private array $hrUserGroups = [];
-
   public function __construct(
     string $appName,
     IRequest $request,
@@ -32,13 +29,6 @@ class OverviewController extends Controller {
     private HrService $hrService,
   ) {
     parent::__construct($appName, $request);
-
-    $rawUser = $appConfig->getAppValueString('hr_user_groups');
-    $userGroups = json_decode($rawUser, true);
-    if (!is_array($userGroups)) {
-      $userGroups = array_filter(array_map('trim', explode(',', (string)$rawUser)));
-    }
-    $this->hrUserGroups = $userGroups;
   }
 
   #[NoAdminRequired]
@@ -47,22 +37,7 @@ class OverviewController extends Controller {
       return new DataResponse([], 403);
     }
 
-    $result = [];
-    foreach ($this->hrUserGroups as $groupName) {
-      if ($groupName === '') continue;
-      $group = $this->groupManager->get($groupName);
-      if (!$group) continue;
-
-      foreach ($group->getUsers() as $user) {
-        $uid = $user->getUID();
-        $result[$uid] = [
-          'id' => $uid,
-          'name' => $user->getDisplayName(),
-        ];
-      }
-    }
-
-    return new DataResponse(array_values($result));
+    return new DataResponse($this->hrService->getAccessibleUsers());
   }
 
   #[NoAdminRequired]
@@ -73,8 +48,12 @@ class OverviewController extends Controller {
       return new JSONResponse(['error' => 'Unauthorized'], 401);
     }
 
-    $userId = $this->request->getParam('user') ?? $currentUser->getUID();
-    if ($userId !== $currentUser->getUID() && !$this->hrService->isHr()) {
+    $userId = (string)($this->request->getParam('user') ?? $currentUser->getUID());
+    if ($userId === '') {
+      $userId = $currentUser->getUID();
+    }
+
+    if ($userId !== $currentUser->getUID() && !$this->hrService->canAccessUser($userId)) {
       return new JSONResponse(['error' => 'Forbidden'], 403);
     }
 

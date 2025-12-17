@@ -1,6 +1,7 @@
 OC.L10N.register(
   "timesheet",
   {
+    // timesheet-.js translations
     "Sun": "So",
     "Mon": "Mo",
     "Tue": "Di",
@@ -33,6 +34,13 @@ OC.L10N.register(
     "Warning": "Warnung",
     "timesheet": "Stundenzettel",
     "Copied to clipboard": "In die Zwischenablage kopiert",
+
+    // admin.js translations
+    "No rules yet. Add one to restrict HR access based on groups.": "Noch keine Regeln. Fügen Sie eine hinzu, um den HR-Zugriff basierend auf Gruppen einzuschränken.",
+    "Add group...": "Gruppe hinzufügen...",
+    "Rule": "Regel",
+    "HR groups": "HR-Gruppen",
+    "Employee groups": "Mitarbeitergruppen",
   },
   "nplurals=2; plural=(n != 1);"
 );

@@ -38,7 +38,6 @@
     "Warnings": "Fehlermeldungen",
     "Back": "Zurück",
     "Entries for:": "Einträge von:",
-    "Timesheet settings": "Arbeitszeitnachweis – Einstellungen",
     "HR groups": "HR-Gruppen",
     "Employee groups": "Mitarbeitenden",
     "Add group…": "Gruppe hinzufügen.",
@@ -58,8 +57,13 @@
     "Holiday": "Feiertag",
     "Weekend": "Wochenende",
     "Exported: %s": "Exportiert: %s",
-    "timesheet_%s_%s.xlsx": "Arbeitszeitnachweis_%s_%s.xlsx",
-    "timesheet_%s_%s_to_%s.xlsx": "Arbeitszeitnachweis_%s_%s_bis_%s.xlsx"
+    "Timesheet_%s_%s.xlsx": "Arbeitszeitnachweis_%s_%s.xlsx",
+    "Timesheet_%s_%s_to_%s.xlsx": "Arbeitszeitnachweis_%s_%s_bis_%s.xlsx",
+
+    "_comment": "settings-admin.php translations",
+    "Define access rules: HR groups may access timesheets of the employee groups.": "Zugriffsregeln definieren: HR-Gruppen können auf die Arbeitszeitnachweise der Mitarbeitendengruppen zugreifen.",
+    "Timesheet settings": "Arbeitszeitnachweis – Einstellungen",
+    "Add new rule": "Neue Regel hinzufügen"
   },
   "pluralForm": "nplurals=2; plural=(n != 1);"
 }

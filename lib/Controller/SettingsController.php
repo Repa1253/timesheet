@@ -7,6 +7,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\IRequest;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 
 class SettingsController extends Controller {
 
@@ -14,6 +16,8 @@ class SettingsController extends Controller {
     string $appName,
     IRequest $request,
     private IAppConfig $appConfig,
+    private IGroupManager $groupManager,
+    private IUserSession $userSession,
   ) {
     parent::__construct($appName, $request);
   }
@@ -66,5 +70,70 @@ class SettingsController extends Controller {
     $this->appConfig->setAppValueString('hr_user_groups', json_encode($groups));
 
     return new DataResponse(['hr_user_groups' => $groups]);
+  }
+
+  public function saveHrAccessRules(): DataResponse {
+    $user = $this->userSession->getUser();
+    $uid = $user?->getUID();
+    if (!$uid || !$this->groupManager->isAdmin($uid)) {
+      return new DataResponse(['message' => 'Forbidden'], 403);
+    }
+
+    $raw = (string)$this->request->getParam('rules', '[]');
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+      return new DataResponse(['message' => 'Invalid rules'], 400);
+    }
+
+    $clean = $this->sanitizeRules($decoded);
+
+    $this->appConfig->setAppValueString('hr_access_rules', json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+    $allHr = [];
+    $allUsers = [];
+    foreach ($clean as $r) {
+      $allHr = array_merge($allHr, $r['hrGroups']);
+      $allUsers = array_merge($allUsers, $r['userGroups']);
+    }
+    $allHr = array_values(array_unique($allHr));
+    $allUsers = array_values(array_unique($allUsers));
+    $this->appConfig->setAppValueString('hr_groups', json_encode($allHr, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    $this->appConfig->setAppValueString('hr_user_groups', json_encode($allUsers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+    return new DataResponse(['rules' => $clean]);
+  }
+
+  private function sanitizeRules(array $rules): array {
+    $out = [];
+    foreach ($rules as $r) {
+      if (!is_array($r)) continue;
+      
+      $id = isset($r['id']) ? trim((string)$r['id']) : '';
+      if ($id === '') continue;
+
+      $hrGroups = isset($r['hrGroups']) && is_array($r['hrGroups']) ? $r['hrGroups'] : [];
+      $userGroups = isset($r['userGroups']) && is_array($r['userGroups']) ? $r['userGroups'] : [];
+
+      $hrGroups = $this->cleanGroupList($hrGroups);
+      $userGroups = $this->cleanGroupList($userGroups);
+
+      $out[] = [
+        'id' => $id,
+        'hrGroups' => $hrGroups,
+        'userGroups' => $userGroups,
+      ];
+    }
+    return $out;
+  }
+
+  private function cleanGroupList(array $groups): array {
+    $groups = array_values(array_filter(array_map(fn($g) => trim((string)$g), $groups), fn($v) => $v !== ''));
+    $groups = array_values(array_unique($groups));
+
+    $final = [];
+    foreach ($groups as $g) {
+      if ($this->groupManager->groupExists($g)) $final[] = $g;
+    }
+    return $final;
   }
 }
