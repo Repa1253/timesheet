@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="24" height="24" viewBox="0 0 24 24"
+     fill="none" stroke="#fff" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round">
+
+  <defs>
+    <mask id="cutout-clock">
+      <rect x="0" y="0" width="24" height="24" fill="white"/>
+      <circle cx="17.5" cy="17.5" r="7" fill="black"/>
+    </mask>
+  </defs>
+
+  <!-- Calendar (masked so it won't appear behind the clock) -->
+  <g mask="url(#cutout-clock)">
+    <rect x="3" y="5" width="14" height="14" rx="2" ry="2"/>
+    <line x1="3" y1="9" x2="17" y2="9"/>
+
+    <!-- rings -->
+    <line x1="7" y1="3" x2="7" y2="6"/>
+    <line x1="13" y1="3" x2="13" y2="6"/>
+
+    <!-- text lines -->
+    <line x1="6" y1="12" x2="12.5" y2="12"/>
+    <line x1="6" y1="14.5" x2="11" y2="14.5"/>
+  </g>
+
+  <!-- Clock overlay (transparent fill, drawn on top) -->
+  <g fill="none">
+    <circle cx="17.5" cy="17.5" r="4.5"/>
+    <line x1="17.5" y1="17.5" x2="17.5" y2="15.5"/>
+    <line x1="17.5" y1="17.5" x2="19.2" y2="18.7"/>
+  </g>
+
+</svg>

@@ -23,7 +23,7 @@ Mitarbeitende können ihre täglichen Arbeitszeiten erfassen, monatliche Summen 
 HR-Nutzer erhalten eine Übersicht über alle Mitarbeitenden, inklusive Sollzeiten, Salden und Regelverstößen.
 Wenn ein Bundesland hinterlegt wird, zeigt die Monatsansicht die gesetzlichen Feiertage dieses Bundeslandes im Kalender an (aktuell nur deutsche Bundesländer unterstützt).
 	]]></description>
-	<screenhot>https://raw.githubusercontent.com/Repa1253/timesheet/refs/heads/main/img/image.png</screenhot>
+	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/image.png</screenshot>
 
 	<version>1.0.6</version>
 	<licence>agpl</licence>
@@ -42,7 +42,7 @@ Wenn ein Bundesland hinterlegt wird, zeigt die Monatsansicht die gesetzlichen Fe
       <name>Timesheet</name>
       <route>timesheet.page.index</route>
       <order>10</order>
-      <icon>timesheet.png</icon>
+      <icon>timesheet.svg</icon>
       <type>link</type>
     </navigation>
   </navigations>
