@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [1.0.7]
+### Fixed
+- Fixed an issue where the **Excel (XLSX) export** could fail for some installations (ZipStream-related error).
+
+### Improved
+- Improved the **visual consistency of the app icon** in the admin settings (now uses scalable SVG icons).
+
 ## [1.0.6]
 ### Added
 - **Excel (XLSX) export** for time entries.
