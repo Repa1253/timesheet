@@ -172,6 +172,19 @@ class EntryController extends Controller {
     return function_exists('mb_substr') ? mb_substr($title, 0, 31, 'UTF-8') : substr($title, 0, 31);
   }
 
+  private function preloadZipStreamV2(): void {
+    // if already loaded, do nothing
+    if (class_exists(\ZipStream\ZipStream::class, false)) {
+      return;
+    }
+
+    // manually require the ZipStream class
+    $zipStreamFile = dirname(__DIR__, 2) . '/vendor/maennchen/zipstream-php/src/ZipStream.php';
+    if (is_file($zipStreamFile)) {
+      require_once $zipStreamFile;
+    }
+  }
+
   #[NoAdminRequired]
   #[NoCSRFRequired]
   public function exportXlsx(?string $from = null, ?string $to = null, ?string $user = null): DataDownloadResponse {
@@ -430,6 +443,8 @@ class EntryController extends Controller {
     $spreadsheet->setActiveSheetIndex(0);
 
     // 7. save to temp file
+    $this->preloadZipStreamV2();
+
     $writer = new Xlsx($spreadsheet);
     ob_start();
     $writer->save('php://output');
