@@ -69,6 +69,6 @@ Simple Timesheet app for Nextcloud — lightweight time tracking for users. This
 - Fork, create a feature branch, and open a pull request.
 
 ## License
-MIT — see LICENSE file.
+GNU Affero General Public License v3.0 — see LICENSE file.
 
 For issues or questions, open an issue in this repository.
