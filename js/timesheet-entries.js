@@ -238,6 +238,8 @@
     const isHr = !!row.closest('#hr-user-entries');
     const uid = isHr ? document.querySelector('#hr-user-title span')?.textContent : S.currentUserId;
     if (uid) await refreshOvertimeTotal(uid, isHr ? document.getElementById('tab-hr') : document);
+
+    U.showRowSavedFeedback(row);
   }
 
   // Save the row if there are changes
@@ -257,24 +259,25 @@
 
     if (!startInput || !endInput || !breakInput) return;
 
-    const startVal = (startInput.value || '').trim();
-    const endVal   = (endInput.value   || '').trim();
-    const comment  = commentInput ? commentInput.value : '';
+    const workDate = row.dataset.date;
+    if (!workDate) return;
+
+    const startVal = (startInput.value    || '').trim();
+    const endVal   = (endInput.value      || '').trim();
+    const comment  = (commentInput?.value || '').trim();
 
     const hasStart = !!startVal;
     const hasEnd   = !!endVal;
     const hasBothTimes = hasStart && hasEnd;
-    const hasAnyTime = hasStart || hasEnd;
-    const commentNonEmpty = comment.trim().length > 0;
+
+    const hasId = !!row.dataset.id;
 
     const savedStart   = row.dataset.savedStart || '';
     const savedEnd     = row.dataset.savedEnd   || '';
     const savedBreak   = row.dataset.savedBreak != null ? parseInt(row.dataset.savedBreak, 10) : 0;
-    const savedComment = row.dataset.savedComment ?? '';
+    const savedComment = String(row.dataset.savedComment ?? '').trim();
 
-    const hasId = !!row.dataset.id;
-
-    if (!hasAnyTime && !commentNonEmpty) {
+    if (!(hasStart || hasEnd) && comment.length === 0) {
       if (hasId) {
         row.dataset.saving = '1';
         try { await deleteEntryForRow(row); } 
@@ -288,60 +291,73 @@
       return;
     }
 
-    const parsedBreak = U.parseBreakMinutesInput(breakInput.value);
-    if (parsedBreak == null) {
-      breakInput.value = String(Number.isFinite(savedBreak) ? savedBreak : 0);
-      return;
-    }
-    const breakMin = parsedBreak;
-    breakInput.value = String(breakMin);
+    // Full save: start+end present
+    // Comment-only: comment present, but times NOT complete
+    // Partial time without comment: block
 
-    if (startVal === savedStart && endVal === savedEnd && breakMin === savedBreak && comment === savedComment) {
-      return;
-    }
+    const isCommentOnly = comment.length > 0 && !hasBothTimes;
 
-    const workDate = row.dataset.date;
-    if (!workDate) return;
-
-    if (!hasBothTimes && commentNonEmpty) {
-      if (warnCell) warnCell.textContent = t(S.appName, 'Time missing');
-      return;
-    }
-
-    if (!hasBothTimes && !commentNonEmpty) {
+    // Block partial time without comment
+    if (!hasBothTimes && !isCommentOnly) {
       if (warnCell) warnCell.textContent = t(S.appName, 'Time incomplete');
       return;
     }
-    
-    const payload = { workDate, start: startVal, end: endVal, breakMinutes: breakMin, comment };
 
-    const startMin = U.hmToMin(payload.start);
-    const endMin   = U.hmToMin(payload.end);
-    const duration = (startMin != null && endMin != null) ? Math.max(0, endMin - startMin - payload.breakMinutes) : null;
+    let breakMin = 0;
 
-    const dateStr = workDate;
-    let stateCode;
-    if (isHr) {
-      const hrStateInput = document.querySelector('#tab-hr .config-state');
-      stateCode = (hrStateInput?.value);
+    // Full save
+    if (!isCommentOnly) {
+      breakMin = U.parseBreakMinutesInput(breakInput.value);
+      if (breakMin == null) {
+        breakInput.value = String(Number.isFinite(savedBreak) ? savedBreak : 0);
+        return;
+      }
+      breakInput.value = String(breakMin);
+
+      const startMin = U.hmToMin(startVal);
+      const endMin   = U.hmToMin(endVal);
+      const duration = (startMin != null && endMin != null) ? Math.max(0, endMin - startMin - breakMin) : null;
+
+      let stateCode;
+      if (isHr) {
+        const hrStateInput = document.querySelector('#tab-hr .config-state');
+        stateCode = (hrStateInput?.value);
+      } else {
+        const mineStateInput = document.querySelector('#tab-mine .config-state');
+        stateCode = (mineStateInput?.value || S.userConfig?.state);
+      }
+
+      const holidayMap = S.holidayCache.get(`${stateCode}_${workDate.slice(0, 4)}`) || {};
+      const baseDailyMin = getEffectiveDailyMin(isHr ? document.getElementById('hr-user-entries') : null);
+      const diffMin = (duration != null && baseDailyMin != null) ? (duration - baseDailyMin) : null;
+
+      if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: breakMin }, workDate, holidayMap);
+      if (durCell)  durCell.textContent  = U.minToHm(duration);
+      if (diffCell) diffCell.textContent = U.minToHm(diffMin);
+
+      // Check if anything changed
+      if (startVal === savedStart && endVal === savedEnd && breakMin === savedBreak && comment === savedComment) {
+        return;
+      }
+    // Comment-only save
     } else {
-      const mineStateInput = document.querySelector('#tab-mine .config-state');
-      stateCode = (mineStateInput?.value || S.userConfig?.state);
+      // Show warning for incomplete time
+      if (warnCell) warnCell.textContent = (hasStart || hasEnd) ? t(S.appName, 'Time incomplete') : '';
+
+      // Check if anything changed
+      if (!(savedStart !== '' || savedEnd !== '' || (Number.isFinite(savedBreak) ? savedBreak : 0) !== 0) && comment === savedComment) {
+        return;
+      }
     }
-
-    const holidayMap = S.holidayCache.get(`${stateCode}_${dateStr.slice(0, 4)}`) || {};
-    const baseDailyMin = getEffectiveDailyMin(isHr ? document.getElementById('hr-user-entries') : null);
-    const diffMin = (duration != null && baseDailyMin != null) ? (duration - baseDailyMin) : null;
-
-    if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: payload.breakMinutes }, dateStr, holidayMap);
-    if (durCell)  durCell.textContent  = U.minToHm(duration);
-    if (diffCell) diffCell.textContent = U.minToHm(diffMin);
 
     row.dataset.saving = '1';
 
     try {
       let savedEntry;
-      
+      const payload = isCommentOnly
+        ? { workDate, comment, commentOnly: 1 }
+        : { workDate, start: startVal, end: endVal, breakMinutes: breakMin, comment };
+
       if (hasId) {
         savedEntry = await TS.api(`/api/entries/${encodeURIComponent(row.dataset.id)}`, {
           method: 'PUT',
@@ -361,10 +377,26 @@
         if (savedEntry?.id) row.dataset.id = savedEntry.id;
       }
 
-      row.dataset.savedStart   = startVal;
-      row.dataset.savedEnd     = endVal;
-      row.dataset.savedBreak   = String(breakMin);
-      row.dataset.savedComment = comment;
+      if (isCommentOnly) {
+        if (startInput) startInput.value = '';
+        if (endInput)   endInput.value   = '';
+        if (breakInput) breakInput.value = '0';
+        if (warnCell)   warnCell.textContent = '';
+        if (durCell)    durCell.textContent  = '--:--';
+        if (diffCell)   diffCell.textContent = '--:--';
+      }
+
+      if (!isCommentOnly) {
+        row.dataset.savedStart   = startVal;
+        row.dataset.savedEnd     = endVal;
+        row.dataset.savedBreak   = String(breakMin);
+        row.dataset.savedComment = comment;
+      } else {
+        row.dataset.savedStart   = '';
+        row.dataset.savedEnd     = '';
+        row.dataset.savedBreak   = '0';
+        row.dataset.savedComment = comment;
+      }
 
       updateWorkedHours(row);
 
