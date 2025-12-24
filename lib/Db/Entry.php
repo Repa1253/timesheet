@@ -10,9 +10,9 @@ class Entry extends Entity implements JsonSerializable {
   protected $userId;
   /** @var string YYYY-MM-DD */
   protected $workDate;
-  /** @var int minutes since midnight */
+  /** @var ?int minutes since midnight */
   protected $startMin;
-  /** @var int minutes since midnight */
+  /** @var ?int minutes since midnight */
   protected $endMin;
   /** @var int */
   protected $breakMinutes = 0;

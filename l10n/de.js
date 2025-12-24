@@ -18,7 +18,6 @@ OC.L10N.register(
     "Too many negative hours": "Zu viele Minusstunden",
     "Holiday": "Feiertag",
     "Weekend": "Wochenende",
-    "Time missing": "Zeitangabe fehlt",
     "Time incomplete": "Zeitangabe unvollständig",
     "User": "Benutzer",
     "Worked Hours": "Gearbeitete Stunden",

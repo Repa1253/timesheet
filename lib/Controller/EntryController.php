@@ -59,7 +59,7 @@ class EntryController extends Controller {
   }
 
   #[NoAdminRequired]
-  public function create(string $workDate, string $start, string $end, int $breakMinutes = 0, ?string $comment = null): DataResponse {
+  public function create(string $workDate, ?string $start = null, ?string $end = null, int $breakMinutes = 0, ?string $comment = null): DataResponse {
     $current = $this->userSession->getUser();
     if (!$current) {
       return new DataResponse(['error' => 'Unauthorized'], 401);
@@ -71,10 +71,30 @@ class EntryController extends Controller {
       $targetUid = $userParam;
     }
 
+    if ($comment === null) { $c = $this->request->getParam('comment'); if ($c !== null) $comment = (String)$c; }
+    if ($start === null)   { $s = $this->request->getParam('start');   if ($s !== null) $start = (String)$s; }
+    if ($end === null)     { $e = $this->request->getParam('end');     if ($e !== null) $end = (String)$e; }
+
+    $commentOnly = ((int)$this->request->getParam('commentOnly', 0) === 1);
+    $commentTrim = trim((string)($comment ?? ''));
+
+    $startMin = self::hmToMinNullable($start);
+    $endMin   = self::hmToMinNullable($end);
+    $timesComplete = ($startMin !== null && $endMin !== null);
+
+    if ($commentOnly || (!$timesComplete && $commentTrim !== '')) {
+      $entry = $this->entryMapper->upsertCommentOnly($targetUid, $workDate, $commentTrim);
+      return new DataResponse($entry);
+    }
+
+    if (!$timesComplete) {
+      throw new DataResponse(['error' => 'Time incomplete'], 400);
+    }
+
     $payload = [
       'workDate' => $workDate,
-      'startMin' => self::hmToMin($start),
-      'endMin' => self::hmToMin($end),
+      'startMin' => $startMin,
+      'endMin' => $endMin,
       'breakMinutes' => $breakMinutes,
       'comment' => $comment,
     ];
@@ -85,12 +105,56 @@ class EntryController extends Controller {
 
   #[NoAdminRequired]
   public function update(int $id, ?string $workDate = null, ?string $start = null, ?string $end = null, ?int $breakMinutes = null, ?string $comment = null): DataResponse {
+    if ($comment === null)  { $c  = $this->request->getParam('comment');  if ($c !== null) $comment = (String)$c; }
+    if ($start === null)    { $s  = $this->request->getParam('start');    if ($s !== null) $start = (String)$s; }
+    if ($end === null)      { $e  = $this->request->getParam('end');      if ($e !== null) $end = (String)$e; }
+    if ($workDate === null) { $wd = $this->request->getParam('workDate'); if ($wd !== null) $workDate = (String)$wd; }
+    if ($breakMinutes === null) {
+      $bm = $this->request->getParam('breakMinutes');
+      if ($bm !== null && $bm !== '') $breakMinutes = (int)$bm;
+    }
+
+    $commentOnly = ((int)$this->request->getParam('commentOnly', 0) === 1);
+    $commentTrim = trim((string)($comment ?? ''));
+
     $data = [];
     if ($workDate !== null) $data['workDate'] = $workDate;
-    if ($start !== null)    $data['startMin'] = self::hmToMin($start);
-    if ($end !== null)      $data['endMin']   = self::hmToMin($end);
+
+    // If comment only flag is set, clear times and set comment only
+    if ($commentOnly) {
+      $data['startMin'] = null;
+      $data['endMin'] = null;
+      $data['breakMinutes'] = 0;
+      $data['comment'] = $commentTrim;
+      $entry = $this->service->update($id, $data, $this->hrService->isHr());
+      return new DataResponse($entry);
+    }
+
+    $startMin = self::hmToMinNullable($start);
+    $endMin   = self::hmToMinNullable($end);
+    $timesTouched = ($start !== null || $end !== null);
+
+    // If times are incomplete, and comment is present, clear times and set comment only
+    if ($timesTouched && ($startMin === null || $endMin === null) && $commentTrim !== '') {
+      $data['startMin'] = null;
+      $data['endMin'] = null;
+      $data['breakMinutes'] = 0;
+      $data['comment'] = $commentTrim;
+      $entry = $this->service->update($id, $data, $this->hrService->isHr());
+      return new DataResponse($entry);
+    }
+
+    if ($start !== null) {
+      if ($startMin === null) return new DataResponse(['error' => 'Invalid start time'], 400);
+      $data['startMin'] = $startMin;
+    }
+    if ($end !== null) {
+      if ($endMin === null) return new DataResponse(['error' => 'Invalid end time'], 400);
+      $data['endMin'] = $endMin;
+    }
     if ($breakMinutes !== null) $data['breakMinutes'] = $breakMinutes;
-    if ($comment !== null)  $data['comment']  = $comment;
+    if ($comment !== null) $data['comment'] = $comment;
+
     $entry = $this->service->update($id, $data, $this->hrService->isHr());
     return new DataResponse($entry);
   }
@@ -101,9 +165,23 @@ class EntryController extends Controller {
     return new DataResponse(['ok' => true]);
   }
 
-  private static function hmToMin(string $hm): int {
-    [$h, $m] = array_map('intval', explode(':', $hm));
-    return max(0, $h*60 + $m);
+  private static function hmToMinNullable(?string $hm): ?int {
+    $hm = trim((string)($hm ?? ''));
+    if ($hm === '') return null;
+
+    if (!preg_match('/^([01]?\d|2[0-3]):([0-5]\d)$/', $hm, $matches)) {
+      return null;
+    }
+
+    return ((int)$matches[1]) * 60 + ((int)$matches[2]);
+  }
+
+  private static function hmToMinStrict(string $hm): int {
+    $min = self::hmToMinNullable($hm);
+    if ($min === null) {
+      throw new \InvalidArgumentException('Invalid time format: ' . $hm);
+    }
+    return $min;
   }
 
   private static function parseMonthStart(?string $monthStr, \DateTimeZone $tz): \DateTimeImmutable {
