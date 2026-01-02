@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [1.0.8]
+### Fixed
+- Fixed missed version bump in appinfo/info.xml to ensure proper updates.
+
 ## [1.0.7]
 ### Fixed
 - Fixed an issue where the **Excel (XLSX) export** could fail for some installations (ZipStream-related error).
