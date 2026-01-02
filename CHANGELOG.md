@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [1.0.9]
+### Fixed
+- Rebuild vendor folder, App now using correct dependency versions
+
 ## [1.0.8]
 ### Fixed
 - Fixed missed version bump in appinfo/info.xml to ensure proper updates.
