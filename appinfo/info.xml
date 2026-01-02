@@ -12,18 +12,25 @@
 	<description><![CDATA[
 Simple time tracking app for employees and HR inside Nextcloud.
 
-Employees can enter their daily working hours, see monthly totals and overtime.
-HR users get an overview of all employees, including targets, balances and rule violations.
-When a federal state is specified, the monthly view displays the public holidays for that federal state in the calendar (currently only German federal states are supported).
+Employees record their start time, total break time and end time each day and immediately see a monthly overview, totals and overtime.
+HR users get a central overview of all employees, including target times, balances and possible rule violations.
+Optionally, public holidays can be displayed as soon as a federal state is stored (currently only German federal states).
+
+The app is kept simple: breaks are recorded as a total duration.
+The target time is a uniform daily value, making it particularly suitable for classic full-time models and simple time sheets.
 	]]></description>
 	<description lang="de"><![CDATA[
 Einfache Zeiterfassungs-App für Mitarbeitende und HR innerhalb von Nextcloud.
 
-Mitarbeitende können ihre täglichen Arbeitszeiten erfassen, monatliche Summen und Überstunden einsehen.
-HR-Nutzer erhalten eine Übersicht über alle Mitarbeitenden, inklusive Sollzeiten, Salden und Regelverstößen.
-Wenn ein Bundesland hinterlegt wird, zeigt die Monatsansicht die gesetzlichen Feiertage dieses Bundeslandes im Kalender an (aktuell nur deutsche Bundesländer unterstützt).
+Mitarbeitende erfassen pro Tag Startzeit, Gesamt-Pausenzeit und Endzeit und sehen sofort Monatsübersicht, Summen und Überstunden. 
+HR-Nutzer bekommen eine zentrale Übersicht über alle Mitarbeitenden inklusive Sollzeiten, Salden und möglichen Regelverstößen. 
+Optional lassen sich gesetzliche Feiertage anzeigen, sobald ein Bundesland hinterlegt ist (aktuell nur deutsche Bundesländer).
+
+Die App ist schlank gehalten: Pausen werden als eine Gesamt-Dauer erfasst. 
+Die Sollzeit ist ein einheitlicher Tageswert – damit eignet sie sich besonders gut für klassische Vollzeit-Modelle und einfache Arbeitszeitnachweise.
 	]]></description>
-	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/image.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture.PNG</screenshot>
+	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture2.PNG</screenshot>
 
 	<version>1.0.8</version>
 	<licence>agpl</licence>

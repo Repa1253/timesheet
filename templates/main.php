@@ -104,11 +104,11 @@
 
         <!-- HR-Statistiken -->
         <div id="hr-stats-section" class="ts-hr-section">
-          <h4><?php p($l->t('Statistics (current Month)')) ?></h4>
+          <h4><?php p($l->t('Statistics')) ?></h4>
           <table class="grid hr-stats-table">
             <tbody>
               <tr>
-                <th><?php p($l->t('Total hours of employees')); ?></th>
+                <th><?php p($l->t('Total hours of employees (this Month)')); ?></th>
                 <td id="hr-stat-total-hours">-</td>
               </tr>
               <tr>
