@@ -25,7 +25,7 @@ Wenn ein Bundesland hinterlegt wird, zeigt die Monatsansicht die gesetzlichen Fe
 	]]></description>
 	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/image.png</screenshot>
 
-	<version>1.0.6</version>
+	<version>1.0.7</version>
 	<licence>agpl</licence>
 	<author mail="dgu@xiller.com">David Gun (www.xiller-academy.de)</author>
 	<category>tools</category>
