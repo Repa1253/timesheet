@@ -19,6 +19,9 @@ return [
     ['name' => 'config#getUserConfig', 'url' => '/api/hr/config/{userId}', 'verb' => 'GET'],
     ['name' => 'config#setUserConfig', 'url' => '/api/hr/config/{userId}', 'verb' => 'PUT'],
 
+    ['name' => 'config#getHrNotificationSettings', 'url' => '/api/hr/notifications', 'verb' => 'GET'],
+    ['name' => 'config#setHrNotificationSettings', 'url' => '/api/hr/notifications', 'verb' => 'PUT'],
+
     // REST: Holidays 
     ['name' => 'holiday#getHolidays', 'url' => '/api/holidays', 'verb' => 'GET'],
 

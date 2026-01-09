@@ -19,7 +19,7 @@ class AdminSection implements IIconSection {
   }
 
   public function getName(): string {
-    return $this->l->t('Arbeitszeitnachweis');
+    return $this->l->t('Timesheet');
   }
 
   public function getID(): string {
