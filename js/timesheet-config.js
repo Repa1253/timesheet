@@ -27,6 +27,67 @@
     }
   }
 
+  async function loadHrNotificationSettings() {
+    if (!S.currentUserId) return;
+
+    TS.dom.refresh();
+    const dom = TS.dom;
+    if (!dom.hrNotificationsSection) return;
+
+    try {
+      const settings = await TS.api('/api/hr/notifications');
+      S.hrNotificationSettings = settings || null;
+
+      if (!dom.hrMailNoEntryEnabled) return;
+
+      dom.hrMailNoEntryEnabled.checked = !!settings?.noEntryEnabled;
+      dom.hrMailNoEntryDays.value      = String(settings?.noEntryDays ?? 14);
+
+      dom.hrMailOvertimeEnabled.checked = !!settings?.overtimeEnabled;
+      dom.hrMailOvertimeThreshold.value = U.minToHm(settings?.overtimeThresholdMinutes ?? 600).replace('-', '');
+      dom.hrMailNegativeEnabled.checked = !!settings?.negativeOvertimeEnabled;
+      dom.hrMailNegativeThreshold.value = U.minToHm(settings?.negativeOvertimeThresholdMinutes ?? 600).replace('-', '');
+    } catch (error) {
+      console.warn('⚠️ Could not load HR notification settings', error);
+    }
+  }
+
+  async function saveHrNotificationSettings() {
+    if (!S.currentUserId) return;
+
+    TS.dom.refresh();
+    const dom = TS.dom;
+    if (!dom.hrNotificationsSection) return;
+
+    const days = parseInt(dom.hrMailNoEntryDays?.value || '14', 10);
+    const otMin  = U.hmToMin(dom.hrMailOvertimeThreshold?.value || '10:00');
+    const negMin = U.hmToMin(dom.hrMailNegativeThreshold?.value || '10:00');
+
+    const payload = {
+      noEntryEnabled: !!dom.hrMailNoEntryEnabled?.checked,
+      noEntryDays: Number.isFinite(days) ? Math.min(365, Math.max(1, days)) : 14,
+
+      overtimeEnabled: !!dom.hrMailOvertimeEnabled?.checked,
+      overtimeThresholdMinutes: (typeof otMin === 'number' && Number.isFinite(otMin)) ? Math.max(0, otMin) : 600,
+
+      negativeOvertimeEnabled: !!dom.hrMailNegativeEnabled?.checked,
+      negativeOvertimeThresholdMinutes: (typeof negMin === 'number' && Number.isFinite(negMin)) ? Math.max(0, negMin) : 600,
+    };
+
+    try {
+      const result = await TS.api('/api/hr/notifications', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+
+      S.hrNotificationSettings = result || payload;
+      TS.notify(t(S.appName, 'Saved'));
+    } catch (error) {
+      console.error('❌ Failed to save HR notification settings:', error);
+      TS.notify(t(S.appName, 'Save failed'));
+    }
+  }
+
   // Initialize configuration handlers
   function init() {
     TS.dom.refresh();
@@ -98,6 +159,37 @@
         }
       });
     });
+
+    // HR Notification Settings
+    if (dom.hrNotificationsSection) {
+      let booting = true;
+      let timer = null;
+
+      const scheduleSave = () => {
+        if (booting) return;
+        clearTimeout(timer);
+        timer = setTimeout(() => saveHrNotificationSettings(), 450);
+      };
+
+      const inputs = [
+        dom.hrMailNoEntryEnabled,
+        dom.hrMailNoEntryDays,
+        dom.hrMailOvertimeEnabled,
+        dom.hrMailOvertimeThreshold,
+        dom.hrMailNegativeEnabled,
+        dom.hrMailNegativeThreshold,
+      ].filter(Boolean);
+
+      inputs.forEach(el => {
+        el.addEventListener('change', scheduleSave);
+        el.addEventListener('input', scheduleSave); 
+      });
+
+      (async () => {
+        await loadHrNotificationSettings();
+        booting = false;
+      })();
+    }
   }
 
   // Expose functions

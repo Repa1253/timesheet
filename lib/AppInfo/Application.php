@@ -6,7 +6,8 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Bootstrap\IBootContext;
-use OCP\Util;
+use OCP\BackgroundJob\IJobList;
+use OCA\Timesheet\BackgroundJob\HrNotificationJob;
 
 class Application extends App implements IBootstrap {
 	public const APP_ID = 'timesheet';
@@ -21,10 +22,21 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function register(IRegistrationContext $context): void {
-		// nicht nötig
+		// not needed
 	}
 
 	public function boot(IBootContext $context): void {
-		// Wird bei jedem Request aufgerufen (App ist aktiviert).
+		$server = $context->getServerContainer();
+
+		/** @var IJobList $jobList */
+		$jobList = $server->get(IJobList::class);
+		$jobClass = HrNotificationJob::class;
+
+		if (method_exists($jobList, 'has')) {
+			if (!$jobList->has($jobClass, null)) {
+				$jobList->add($jobClass, null);
+			}
+			return;
+		}
 	}
 }

@@ -32,7 +32,7 @@ Die Sollzeit ist ein einheitlicher Tageswert – damit eignet sie sich besonders
 	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture.PNG</screenshot>
 	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture2.PNG</screenshot>
 
-	<version>1.0.10</version>
+	<version>1.1.0</version>
 	<licence>agpl</licence>
 	<author mail="dgu@xiller.com">David Gun (www.xiller-academy.de)</author>
 	<category>tools</category>
@@ -58,4 +58,8 @@ Die Sollzeit ist ein einheitlicher Tageswert – damit eignet sie sich besonders
 		<admin>OCA\Timesheet\Settings\AdminSettings</admin>
 		<admin-section>OCA\Timesheet\Settings\AdminSection</admin-section>
 	</settings>
+
+	<background-jobs>
+		<job>OCA\Timesheet\BackgroundJob\HrNotificationJob</job>
+	</background-jobs>
 </info>

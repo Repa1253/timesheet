@@ -15,6 +15,17 @@ use OCA\Timesheet\Service\HrService;
 
 class ConfigController extends Controller {
 
+  private const DEFAULT_WORK_MINUTES = 480;
+
+  private const DEFAULT_NO_ENTRY_ENABLED = false;
+  private const DEFAULT_NO_ENTRY_DAYS = 14;
+
+  private const DEFAULT_OVERTIME_ENABLED = false;
+  private const DEFAULT_OVERTIME_THRESHOLD = 600; // 10 hours
+
+  private const DEFAULT_NEGATIVE_OVERTIME_ENABLED = false;
+  private const DEFAULT_NEGATIVE_OVERTIME_THRESHOLD = 600; // 10 hours
+
   private IUserSession $userSession;
   private IDBConnection $db;
 
@@ -90,7 +101,180 @@ class ConfigController extends Controller {
   }
 
   /**
-  * Helper to ensure the current user belongs to the HR group.
+   * @NoAdminRequired
+   * @NoCSRFRequired
+   * @Route("/api/hr/notifications", methods={"GET"})
+   * 
+   * Returns email notification settings for the logged-in HR user
+   */
+  public function getHrNotificationSettings(): DataResponse {
+    $currentUser = $this->assertHrUser();
+
+    $defaults = [
+      'noEntryEnabled' => self::DEFAULT_NO_ENTRY_ENABLED,
+      'noEntryDays' => self::DEFAULT_NO_ENTRY_DAYS,
+      'overtimeEnabled' => self::DEFAULT_OVERTIME_ENABLED,
+      'overtimeThresholdMinutes' => self::DEFAULT_OVERTIME_THRESHOLD,
+      'negativeOvertimeEnabled' => self::DEFAULT_NEGATIVE_OVERTIME_ENABLED,
+      'negativeOvertimeThresholdMinutes' => self::DEFAULT_NEGATIVE_OVERTIME_THRESHOLD,
+    ];
+
+    $qb = $this->db->getQueryBuilder();
+    $qb->select(
+        'mail_no_entry_enabled',
+        'mail_no_entry_days',
+        'mail_overtime_enabled',
+        'mail_overtime_threshold_min',
+        'mail_negative_enabled',
+        'mail_negative_threshold_min'
+      )
+      ->from('ts_user_config')
+      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($currentUser)));
+
+    $row = $qb->executeQuery()->fetch();
+    if ($row === false) {
+      return new DataResponse($defaults, Http::STATUS_OK);
+    }
+
+    $out = $defaults;
+
+    if (array_key_exists('mail_no_entry_enabled', $row) && $row['mail_no_entry_enabled'] !== null) {
+      $out['noEntryEnabled'] = ((int)$row['mail_no_entry_enabled']) === 1;
+    }
+    if (array_key_exists('mail_no_entry_days', $row) && $row['mail_no_entry_days'] !== null) {
+      $out['noEntryDays'] = (int)$row['mail_no_entry_days'];
+    }
+
+    if (array_key_exists('mail_overtime_enabled', $row) && $row['mail_overtime_enabled'] !== null) {
+      $out['overtimeEnabled'] = ((int)$row['mail_overtime_enabled']) === 1;
+    }
+    if (array_key_exists('mail_overtime_threshold_min', $row) && $row['mail_overtime_threshold_min'] !== null) {
+      $out['overtimeThresholdMinutes'] = (int)$row['mail_overtime_threshold_min'];
+    }
+
+    if (array_key_exists('mail_negative_enabled', $row) && $row['mail_negative_enabled'] !== null) {
+      $out['negativeOvertimeEnabled'] = ((int)$row['mail_negative_enabled']) === 1;
+    }
+    if (array_key_exists('mail_negative_threshold_min', $row) && $row['mail_negative_threshold_min'] !== null) {
+      $out['negativeOvertimeThresholdMinutes'] = (int)$row['mail_negative_threshold_min'];
+    }
+
+    $out['noEntryDays'] = max(1, min(365, (int)$out['noEntryDays']));
+    $out['overtimeThresholdMinutes']         = max(0, (int)$out['overtimeThresholdMinutes']);
+    $out['negativeOvertimeThresholdMinutes'] = max(0, (int)$out['negativeOvertimeThresholdMinutes']);
+
+    return new DataResponse($out, Http::STATUS_OK);
+  }
+
+  /**
+   * @NoAdminRequired
+   * @NoCSRFRequired
+   * @Route("/api/hr/notifications", methods={"PUT"})
+   * 
+   * Stores email notification settings for the logged-in HR user
+   * 
+   * Expects JSON body with fields:
+   * {
+   *   "noEntryEnabled": true,
+   *   "noEntryDays": 14,
+   *   "overtimeEnabled": false,
+   *   "overtimeThresholdMinutes": 600,
+   *   "negativeOvertimeEnabled": false,
+   *   "negativeOvertimeThresholdMinutes": 600
+   * }
+   */
+  public function setHrNotificationSettings(): DataResponse {
+    $currentUser = $this->assertHrUser();
+
+    $payload = $this->request->getParams();
+    if (!is_array($payload)) $payload = [];
+
+    $noEntryEnabled = array_key_exists('noEntryEnabled', $payload)
+      ? (bool)$payload['noEntryEnabled']
+      : self::DEFAULT_NO_ENTRY_ENABLED;
+
+    $noEntryDays = array_key_exists('noEntryDays', $payload)
+      ? (int)$payload['noEntryDays']
+      : self::DEFAULT_NO_ENTRY_DAYS;
+
+    $overtimeEnabled = array_key_exists('overtimeEnabled', $payload)
+      ? (bool)$payload['overtimeEnabled']
+      : self::DEFAULT_OVERTIME_ENABLED;
+
+    $overtimeThresholdMinutes = array_key_exists('overtimeThresholdMinutes', $payload)
+      ? (int)$payload['overtimeThresholdMinutes']
+      : self::DEFAULT_OVERTIME_THRESHOLD;
+    
+    $negativeOvertimeEnabled = array_key_exists('negativeOvertimeEnabled', $payload)
+      ? (bool)$payload['negativeOvertimeEnabled']
+      : self::DEFAULT_NEGATIVE_OVERTIME_ENABLED;
+
+    $negativeOvertimeThresholdMinutes = array_key_exists('negativeOvertimeThresholdMinutes', $payload)
+      ? (int)$payload['negativeOvertimeThresholdMinutes']
+      : self::DEFAULT_NEGATIVE_OVERTIME_THRESHOLD;
+
+    // Clamp
+    $noEntryDays = max(1, min(365, $noEntryDays));
+    $overtimeThresholdMinutes = max(0, $overtimeThresholdMinutes);
+    $negativeOvertimeThresholdMinutes = max(0, $negativeOvertimeThresholdMinutes);
+
+    $qb = $this->db->getQueryBuilder();
+    $qb->update('ts_user_config')
+      ->set('mail_no_entry_enabled', $qb->createNamedParameter($noEntryEnabled ? 1 : 0))
+      ->set('mail_no_entry_days', $qb->createNamedParameter($noEntryDays))
+      ->set('mail_overtime_enabled', $qb->createNamedParameter($overtimeEnabled ? 1 : 0))
+      ->set('mail_overtime_threshold_min', $qb->createNamedParameter($overtimeThresholdMinutes))
+      ->set('mail_negative_enabled', $qb->createNamedParameter($negativeOvertimeEnabled ? 1 : 0))
+      ->set('mail_negative_threshold_min', $qb->createNamedParameter($negativeOvertimeThresholdMinutes))
+      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($currentUser)));
+
+    $affectedRows = $qb->executeStatement();
+
+    if ($affectedRows === 0) {
+      // No existing row for this user: insert a new config
+      $qbInsert = $this->db->getQueryBuilder();
+      $qbInsert->insert('ts_user_config')
+        ->values([
+          'user_id'      => $qbInsert->createNamedParameter($currentUser),
+          'work_minutes' => $qbInsert->createNamedParameter(self::DEFAULT_WORK_MINUTES),
+          'state'        => $qbInsert->createNamedParameter(null, \PDO::PARAM_NULL),
+
+          'mail_no_entry_enabled' => $qbInsert->createNamedParameter($noEntryEnabled ? 1 : 0),
+          'mail_no_entry_days' => $qbInsert->createNamedParameter($noEntryDays),
+          'mail_overtime_enabled' => $qbInsert->createNamedParameter($overtimeEnabled ? 1 : 0),
+          'mail_overtime_threshold_min' => $qbInsert->createNamedParameter($overtimeThresholdMinutes),
+          'mail_negative_enabled' => $qbInsert->createNamedParameter($negativeOvertimeEnabled ? 1 : 0),
+          'mail_negative_threshold_min' => $qbInsert->createNamedParameter($negativeOvertimeThresholdMinutes),
+        ]);
+      $qbInsert->executeStatement();
+    }
+
+    return new DataResponse([
+      'noEntryEnabled' => $noEntryEnabled,
+      'noEntryDays' => $noEntryDays,
+      'overtimeEnabled' => $overtimeEnabled,
+      'overtimeThresholdMinutes' => $overtimeThresholdMinutes,
+      'negativeOvertimeEnabled' => $negativeOvertimeEnabled,
+      'negativeOvertimeThresholdMinutes' => $negativeOvertimeThresholdMinutes,
+    ], Http::STATUS_OK);
+  }
+    
+  /**
+   * Helper to ensure the current user belongs to the HR group.
+   * Returns the current user ID.
+  */
+  private function assertHrUser() : string {
+    $currentUser = $this->userSession->getUser();
+    if (!$currentUser) throw new \Exception("Not logged in", Http::STATUS_FORBIDDEN);
+
+    $currentUid = $currentUser->getUID();
+    if (!$this->hrService->isHr($currentUid)) throw new \Exception("Access denied", Http::STATUS_FORBIDDEN);
+
+    return $currentUid;
+  }
+
+  /**
+  * Helper to ensure the current user belongs to the HR group or is the user itself.
   * Throws ForbiddenException if access is not allowed.
   */
   private function assertConfigAccess(string $targetUid): void {

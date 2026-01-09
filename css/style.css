@@ -91,12 +91,8 @@
 #hr-user-table input[type="time"],
 #hr-user-table input[type="number"],
 #hr-user-table input[type="text"] {
-  box-sizing: border-box;
   border: none;
   background: transparent;
-  color: inherit;
-  font: inherit;
-  outline: none;
   margin: 0;
   min-height: 0;
   height: 1.3em;
@@ -109,7 +105,9 @@
 #ts-table input:focus,
 #ts-table textarea:focus,
 #hr-user-table input:focus,
-#hr-user-table textarea:focus {
+#hr-user-table textarea:focus,
+#hr-notifications-section input:hover,
+#hr-notifications-section input:focus {
   box-shadow: inset 0 0 0 2px var(--color-primary, #0082c9);
 }
 
@@ -147,24 +145,21 @@
 #ts-table textarea.commentInput,
 #hr-user-table textarea.commentInput {
   width: 100%;
-  box-sizing: border-box;
   resize: vertical;
   border: none;
   background: transparent;
-  font: inherit;
-  color: inherit;
   margin: 0;
   padding: 0 2px;
-  
   min-height: 0;
   height: 1.3em;
-  line-height: 1.1;
 }
 
 #ts-table input[type="number"],
 #ts-table input[type="text"],
 #hr-user-table input[type="number"],
-#hr-user-table input[type="text"] {
+#hr-user-table input[type="text"],
+#hr-notifications-section input[type="number"],
+#hr-notifications-section input[type="text"] {
   text-align: center;
 }
 
@@ -219,24 +214,6 @@
   display: block;
 }
 
-/* HR Ansicht */
-#hr-userlist-section {
-  background: var(--color-background-dark, #f6f8fa);
-  border: 1px solid var(--color-border, #d0d7de);
-  border-radius: 6px;
-  width: fit-content;
-}
-
-#hr-userlist-section h4 {
-  margin: 0 5px 8px;
-  font-weight: 700;
-}
-
-.hr-back-button:hover,
-.month-nav:hover {
-  background: #ddd;
-}
-
 .hr-user-header-bar {
   display: flex;
   align-items: center;
@@ -265,22 +242,14 @@
   flex-wrap: wrap;
 }
 
-.ts-month-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
+.ts-month-row,
 .ts-month-row-main {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
 }
 
-#tab-mine .ts-month-row-main .hr-config-row {
-  margin-left: auto;
-}
-
+#tab-mine .ts-month-row-main .hr-config-row,
 #tab-hr .hr-user-controls-row .hr-config-row {
   margin-left: auto;
 }
@@ -353,14 +322,6 @@
   background: var(--color-primary-hover, #006ba3);
 }
 
-#export-mine-csv {
-  margin-left: 8px;
-}
-
-#export-hr-csv {
-  border: 1px solid var(--color-background-dark, #f6f8fa);
-}
-
 .ts-hr-row {
   display: flex;
   flex-wrap: wrap-reverse;
@@ -368,23 +329,34 @@
   align-items: flex-end;
 }
 
-#hr-stats-section {
+#hr-userlist-section,
+#hr-stats-section,
+#hr-notifications-section {
   background: var(--color-background-dark, #f6f8fa);
   border: 1px solid var(--color-border, #d0d7de);
   border-radius: 6px;
 }
 
-#hr-stats-section h4 {
+#hr-userlist-section h4,
+#hr-stats-section h4,
+#hr-notifications-section h4 {
   margin: 0 5px 8px;
   font-weight: 700;
 }
 
 #hr-stats-section .hr-stats-table th,
-#hr-stats-section .hr-stats-table td {
+#hr-stats-section .hr-stats-table td,
+#hr-notifications-section .hr-notifications-table th,
+#hr-notifications-section .hr-notifications-table td {
   border: 1px solid var(--color-border, #e1e4e8);
   background: var(--color-main-background, #fff);
   padding: 4px 8px;
   text-align: center;
+}
+
+#hr-notifications-section .hr-notifications-table th:nth-child(2),
+#hr-notifications-section .hr-notifications-table td:nth-child(2) {
+  text-align: left;
 }
 
 /** timesheet-export.js */
@@ -410,9 +382,18 @@
   line-height: 1.2;
 }
 
-#export-hr-xlsx {
-  border: 1px solid var(--color-border, #d0d7de);
-}
+#export-hr-xlsx,
 #export-hr-xlsx-range-ui button.primary {
   border: 1px solid var(--color-border, #d0d7de);
+}
+
+#hr-notifications-section .hr-notifications-table td:nth-child(3) input[type="number"],
+#hr-notifications-section .hr-notifications-table td:nth-child(3) input[type="time"] {
+  width: 5.0em;
+}
+
+#hr-notifications-section .hr-notifications-table td:nth-child(3) span {
+  display: inline-block;
+  width: 4em;
+  text-align: left;
 }

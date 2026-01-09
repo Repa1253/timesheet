@@ -48,6 +48,14 @@
     "Total negative overtime": "Gesamt Minusstunden",
     "Employees with negative overtime": "Mitarbeitende mit Minusstunden",
     "Sum of +/- overtimes": "Summe Über- und Minusstunden",
+    "Email notifications": "E-Mail-Benachrichtigungen",
+    "Notification": "Benachrichtigung",
+    "Threshold": "Schwellenwert",
+    "No entry reminder": "Erinnerung bei fehlenden Einträgen",
+    "days": "Tage",
+    "Overtime warning": "Überstunden-Warnung",
+    "hours": "Stunden",
+    "Negative overtime warning": "Minusstunden-Warnung",
 
     "_comment": "EntryController.php translations",
     "Employee": "Mitarbeiter",
@@ -63,7 +71,20 @@
     "_comment": "settings-admin.php translations",
     "Define access rules: HR groups may access timesheets of the employee groups.": "Zugriffsregeln definieren: HR-Gruppen können auf die Arbeitszeitnachweise der Mitarbeitendengruppen zugreifen.",
     "Timesheet settings": "Arbeitszeitnachweis – Einstellungen",
-    "Add new rule": "Neue Regel hinzufügen"
+    "Add new rule": "Neue Regel hinzufügen",
+
+    "_comment": "HrNotificationJob.php translations",
+    "Timesheet Notifications": "Arbeitszeitnachweis-Benachrichtigungen",
+    "Hello %1$s,": "Hallo %1$s,",
+    "No entry for more than %1$s days:": "Kein Eintrag für mehr als %1$s Tage:",
+    "%1$s (more than %2$s days since last entry)": "%1$s (mehr als %2$s Tage seit letztem Eintrag)",
+    "%1$s (%2$s days since last entry)": "%1$s (%2$s Tage seit letztem Eintrag)",
+    "Too much overtime:": "Zu viele Überstunden:",
+    "%1$s (%2$s overtime)": "%1$s (%2$s Überstunden)",
+    "Too many negative hours:": "Zu viele Minusstunden:",
+    "%1$s (%2$s deficit)": "%1$s (%2$s Minusstunden)",
+    "This email was automatically generated based on the notification settings you selected in Nextcloud. Do not reply to this email.": "Diese E-Mail wurde automatisch basierend auf den von Ihnen in Nextcloud ausgewählten Benachrichtigungseinstellungen generiert. Bitte antworten Sie nicht auf diese E-Mail.",
+    "In the employee list you oversee, one or more warnings are currently shown. The details are listed below.": "In der von Ihnen überwachten Mitarbeitendenliste werden derzeit eine oder mehrere Warnungen angezeigt. Die Details sind unten aufgelistet."
   },
   "pluralForm": "nplurals=2; plural=(n != 1);"
 }

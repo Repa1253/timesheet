@@ -134,6 +134,48 @@
             </tbody>
           </table>
         </div>
+
+        <div id="hr-notifications-section" class="ts-hr-section">
+          <h4><?php p($l->t('Email notifications')) ?></h4>
+
+          <table class="grid hr-notifications-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th><?php p($l->t('Notification')) ?></th>
+                <th><?php p($l->t('Threshold')) ?></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="checkbox" id="hr-mail-no-entry-enabled"></td>
+                <td><?php p($l->t('No entry reminder')) ?></td>
+                <td>
+                  <input type="number" id="hr-mail-no-entry-days" min="1" max="365" step="1" value="14">
+                  <span><?php p($l->t('days')) ?></span>
+                </td>
+              </tr>
+
+              <tr>
+                <td><input type="checkbox" id="hr-mail-overtime-enabled"></td>
+                <td><?php p($l->t('Overtime warning')) ?></td>
+                <td>
+                  <input type="time" id="hr-mail-overtime-threshold" value="10:00" step="60">
+                  <span><?php p($l->t('hours')) ?></span>
+                </td>
+              </tr>
+
+              <tr>
+                <td><input type="checkbox" id="hr-mail-negative-enabled"></td>
+                <td><?php p($l->t('Negative overtime warning')) ?></td>
+                <td>
+                  <input type="time" id="hr-mail-negative-threshold" value="10:00" step="60">
+                  <span><?php p($l->t('hours')) ?></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Zielbereich für die ausgewählten Einträge eines Nutzers -->
