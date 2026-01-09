@@ -1,6 +1,15 @@
 # Changelog
 
 ## [Unreleased]
+## [1.1.0]
+### Added
+- New HR email notifications: a optional weekly summary reminder when employees haven’t logged timesheet entries for a while.
+- Optional warnings for excessive overtime and for too many negative hours.
+- Configurable thresholds (days/hours) directly in the HR UI.
+
+### Improved
+- New “HR Notifications” settings section in the HR view for quick configuration.
+- Full English/German wording for all new UI labels and email texts.
 
 ## [1.0.9]
 ### Fixed
