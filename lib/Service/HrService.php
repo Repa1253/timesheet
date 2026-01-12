@@ -42,6 +42,21 @@ class HrService {
     return false;
   }
 
+  public function getAllHrUserIds(): array {
+    $hrUserIds = [];
+    
+    foreach ($this->hrGroups as $group) {
+      if ($group === '') continue;
+      $grp = $this->groupManager->get($group);
+      if (!$grp) continue;
+      foreach ($grp->getUsers() as $user) {
+        $hrUserIds[$user->getUID()] = true;
+      }
+    }
+
+    return array_keys($hrUserIds);
+  }
+
   /**
    * @return string[]
    */
