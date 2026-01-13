@@ -1,18 +1,20 @@
 # Nextcloud Timesheet (development)
 
-Simple Timesheet app for Nextcloud — lightweight time tracking for users. This repository contains the app source intended for local Nextcloud Docker development.
+A lightweight Timesheet app for Nextcloud. This repository contains the app source intended for local Nextcloud Docker development.
 
 ## Features
-- Track time
-- Per-user entries and export
-- Simple UI integrated into Nextcloud
+- Time entries
+- HR overview (accessible users + overtime summary)
+- XLSX export
+- Optional holiday integration
+- Automated HR reminder emails (background job)
 
-## Prerequisites
-- Nextcloud (tested with Nextcloud 20+)
-- PHP 7.4+ (as required by the Nextcloud instance)
-- Docker & docker-compose (for local development)
-- composer (for PHP dependencies)
-- npm/node (if the app contains frontend assets)
+## Requirements
+- Nextcloud 30–32
+- PHP 8.2+
+- Docker & docker-compose (optional, for local development)
+- Composer (for PHP dependencies)
+- Node.js / npm (optional, for frontend assets)
 
 ## Development notes
 - Follow Nextcloud server API and app development guidelines for compatibility.
@@ -21,49 +23,82 @@ Simple Timesheet app for Nextcloud — lightweight time tracking for users. This
 
 ### App metadata & routing
 - `appinfo/info.xml`  
-  Declares the app ID, name, description, dependencies, navigation entry and admin settings section.
+  App metadata & registration: name/id, dependencies, navigation entry, settings, and background jobs.
 - `appinfo/routes.php`  
-  Defines HTTP routes for the main page (`timesheet.page.index`) and REST API endpoints (entries, HR overview, config, holidays, admin settings).
+  Defines the app’s HTTP routes: UI entry point and API endpoints (e.g., entries, HR overview, settings).
+
+### Bootstrap
+- `lib/AppInfo/Application.php`
+  Ensures the HR notification background job is registered.
 
 ### Controllers
 - `lib/Controller/PageController.php`  
-  Renders the main app UI, registers JS/CSS and loads translations for the browser.
+  Renders the main UI and loads JS/CSS assets.
 - `lib/Controller/EntryController.php`  
-  REST API for creating, updating and deleting timesheet entries (for the current user or, if HR, for selected employees).
+  REST API for timesheet entries + XLSX export (HR can optionally access other users).
 - `lib/Controller/ConfigController.php`  
-  REST API for per-user configuration (daily working minutes, state) including access checks.
+  Reads/writes per-user config and HR notification settings with access checks.
 - `lib/Controller/OverviewController.php`  
-  REST API for the HR overview (employee list, overtime summary, last entry, warnings).
+  HR endpoints: list accessible users + compute overtime summary.
+- `lib/Controller/HolidayController.php`  
+  Public endpoint to fetch holidays via `HolidayService`.
 - `lib/Controller/SettingsController.php`  
-  Handles admin-side updates of HR groups and employee groups from the settings UI.
+  Admin endpoints for HR group setup and HR access rules stored in app config.
 
-### Settings & services
-- `lib/Settings/AdminSettings.php`  
-  Provides the admin settings form (HR groups / employee groups) and passes data to the template.
-- `lib/Settings/AdminSection.php`  
-  Registers the app’s admin section in the Nextcloud administration settings.
-- `lib/Service/HrService.php`  
-  Centralized HR permission logic: resolves HR groups from app config and checks whether a user is an HR member.
+### Services
 - `lib/Service/EntryService.php`  
-  Business logic for creating and updating `Entry` records (including user assignment and default values).
+  Core entry CRUD logic with permission checks (HR vs. normal user).
+- `lib/Service/HrService.php`  
+  Central HR permission model: “who is HR” + “which users HR can access” (group/rule based).
+- `lib/Service/HrNotificationService.php`  
+  Builds the HR warning payload (no-entry / overtime / negative overtime) used by the timed job.
+- `lib/Service/HolidayService.php`  
+  Fetches holidays from an external API and caches them in Nextcloud app data.
+
+### Settings (Admin)
+- `lib/Settings/AdminSection.php`  
+  Registers the admin settings section for this app in Nextcloud.
+- `lib/Settings/AdminSettings.php`  
+  Defines the admin settings page/form and ties it to stored app config.
+
+### Background job (TimedJob)
+- `lib/BackgroundJob/HrNotificationJob.php`  
+  Scheduled job that periodically triggers HR notification logic and sends reminder emails.
 
 ### Templates (UI)
 - `templates/main.php`  
-  Main UI template: tabs for “Timesheet” and “HR overview”, personal timesheet table, HR user list and HR detail view.
+  Main server-rendered page template for the app UI (loaded by `PageController`).
 - `templates/settings-admin.php`  
-  Admin settings template for managing HR groups and employee groups (multi-select with chips/X for removal).
+  Admin settings template shown in Nextcloud’s admin area.
 
-### Frontend code
+### Frontend (JavaScript)
 - `js/timesheet-main.js`  
-  Main frontend logic: loading/saving rows, calculating duration and difference, monthly/overtime summary, HR employee table and detail view.
+  Frontend entry point: bootstraps the timesheet UI.
+- `js/timesheet-core.js`  
+  Shared frontend base (common helpers / shared logic used by other modules).
+- `js/timesheet-entries.js`  
+  Handles entry UI + API calls for creating/updating/deleting entries.
+- `js/timesheet-export.js`  
+  Export UI/flow (triggers XLSX export and related actions).
+- `js/timesheet-hr.js`  
+  HR UI logic (overview, user selection, HR-specific actions).
+- `js/timesheet-config.js`  
+  User configuration UI logic (load/save settings).
+- `js/timesheet-copy.js`  
+  Copy/clipboard helpers used across the UI.
 - `js/admin.js`  
-  Admin-side JS for dynamically adding/removing HR groups and employee groups via AJAX (auto-save, no explicit save button).
+  Admin settings page behavior (client-side interactions).
 
 ### Localization
-- `l10n/de.json`  
-  Server-side translation files used by PHP (`$l->t(...)`) and templates.
-- `l10n/de.js`  
-  Client-side translation registration for JavaScript (`t('timesheet', ...)`), loaded via `Util::addTranslations('timesheet')`.
+  Add a new language by adding matching `l10n/<locale>.json` and `l10n/<locale>.js`.
+- `l10n/*.json`  
+  Server-side translations used by PHP (`$l->t(...)`) and templates.
+- `l10n/*.js`  
+  Client-side translations for JavaScript (`t('timesheet', ...)`), loaded via Nextcloud’s translation utilities.  
+
+### Dependencies
+- `composer.json`  
+  Composer dependencies and tooling configuration.
 
 ## Contributing
 - Fork, create a feature branch, and open a pull request.

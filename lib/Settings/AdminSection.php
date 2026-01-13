@@ -15,7 +15,7 @@ class AdminSection implements IIconSection {
   }
 
   public function getIcon(): string {
-    return $this->urlGenerator->imagePath('timesheet', 'timesheet_dark.svg');
+    return $this->urlGenerator->imagePath('timesheet', 'app_dark.svg');
   }
 
   public function getName(): string {

@@ -6,28 +6,26 @@
 	<name>Timesheet</name>
 	<name lang="de">Arbeitszeitnachweis</name>
 
-	<summary>Time tracking for employees with an HR overview</summary>
-	<summary lang="de">Zeiterfassung für Mitarbeitende mit HR-Übersicht</summary>
+	<summary>Timesheet tracking in Nextcloud with HR dashboard, overtime and export</summary>
+	<summary lang="de">Zeiterfassung in Nextcloud mit HR-Dashboard, Überstunden und Export</summary>
 
 	<description><![CDATA[
-Simple time tracking app for employees and HR inside Nextcloud.
+Track working time directly in Nextcloud — simple for employees, transparent for HR.
 
-Employees record their start time, total break time and end time each day and immediately see a monthly overview, totals and overtime.
-HR users get a central overview of all employees, including target times, balances and possible rule violations.
-Optionally, public holidays can be displayed as soon as a federal state is stored (currently only German federal states).
+Employees create one entry per day (start time, break duration, end time). Timesheet calculates daily totals and overtime automatically, provides a clear monthly overview, and supports XLSX export for payroll/accounting.
+HR users get a central dashboard across employees with target hours, balances and rule-based warnings. Optional reminder emails can be sent automatically via a scheduled background job. Public holidays can be displayed when a region is configured (currently only German federal states supported).
 
 The app is kept simple: breaks are recorded as a total duration.
-The target time is a uniform daily value, making it particularly suitable for classic full-time models and simple time sheets.
+The target time is a uniform daily value, making it particularly suitable for classic full-time models.
 	]]></description>
 	<description lang="de"><![CDATA[
-Einfache Zeiterfassungs-App für Mitarbeitende und HR innerhalb von Nextcloud.
+Arbeitszeit direkt in Nextcloud erfassen – einfach für Mitarbeiter, transparent für die Personalabteilung.
 
-Mitarbeitende erfassen pro Tag Startzeit, Gesamt-Pausenzeit und Endzeit und sehen sofort Monatsübersicht, Summen und Überstunden. 
-HR-Nutzer bekommen eine zentrale Übersicht über alle Mitarbeitenden inklusive Sollzeiten, Salden und möglichen Regelverstößen. 
-Optional lassen sich gesetzliche Feiertage anzeigen, sobald ein Bundesland hinterlegt ist (aktuell nur deutsche Bundesländer).
+Mitarbeiter erstellen einen Eintrag pro Tag (Startzeit, Pausendauer, Endzeit). Die Zeiterfassung berechnet automatisch Tagesgesamtwerte und Überstunden, bietet eine übersichtliche Monatsübersicht und unterstützt den XLSX-Export für die Lohnabrechnung/Buchhaltung.
+HR-Anwender erhalten ein zentrales Dashboard für alle Mitarbeiter mit Zielstunden, Salden und regelbasierten Warnungen. Optionale Erinnerungs-E-Mails können automatisch über einen geplanten Hintergrundjob versendet werden. Feiertage können angezeigt werden, wenn eine Region konfiguriert ist (derzeit werden nur deutsche Bundesländer unterstützt).
 
 Die App ist schlank gehalten: Pausen werden als eine Gesamt-Dauer erfasst. 
-Die Sollzeit ist ein einheitlicher Tageswert – damit eignet sie sich besonders gut für klassische Vollzeit-Modelle und einfache Arbeitszeitnachweise.
+Die Zielzeit ist ein einheitlicher Tageswert, wodurch sie sich besonders für klassische Vollzeitmodelle eignet.
 	]]></description>
 	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture.PNG</screenshot>
 	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture2.PNG</screenshot>
@@ -49,7 +47,7 @@ Die Sollzeit ist ein einheitlicher Tageswert – damit eignet sie sich besonders
       <name>Timesheet</name>
       <route>timesheet.page.index</route>
       <order>10</order>
-      <icon>timesheet.svg</icon>
+      <icon>app.svg</icon>
       <type>link</type>
     </navigation>
   </navigations>
