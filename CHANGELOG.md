@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+
+## [1.1.1]
+### Fixed
+- Missing app icon in the Application View field in "Apps"
+
 ## [1.1.0]
 ### Added
 - New HR email notifications: a optional weekly summary reminder when employees haven’t logged timesheet entries for a while.

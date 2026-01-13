@@ -11,7 +11,7 @@ A lightweight Timesheet app for Nextcloud. This repository contains the app sour
 
 ## Requirements
 - Nextcloud 30–32
-- PHP 8.2+
+- PHP 8.1+
 - Docker & docker-compose (optional, for local development)
 - Composer (for PHP dependencies)
 - Node.js / npm (optional, for frontend assets)
