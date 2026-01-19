@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ## [1.1.1]
+### Added
+- Another screenshot to the storepage
+
 ### Fixed
 - Missing app icon in the Application View field in "Apps"
 

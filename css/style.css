@@ -19,8 +19,14 @@
 .hr-userlist td {
   border: 1px solid var(--color-border, #e1e4e8);
   text-align: center;
-  line-height: 1.0;
   padding: 0 5px;
+}
+
+#ts-table th, 
+#ts-table td,
+#hr-user-table th,
+#hr-user-table td {
+  line-height: 1.0;
 }
 
 #ts-table,
