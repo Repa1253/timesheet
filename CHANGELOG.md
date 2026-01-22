@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [1.1.2]
+### Improved
+- HR layout on different screen sizes.
+
+### Fixed
+- Visual appearance of comment input fields inside tables.
+
 ## [1.1.1]
 ### Added
 - Another screenshot to the storepage
