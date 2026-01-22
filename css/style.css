@@ -151,11 +151,10 @@
 #ts-table textarea.commentInput,
 #hr-user-table textarea.commentInput {
   width: 100%;
-  resize: vertical;
   border: none;
   background: transparent;
   margin: 0;
-  padding: 0 2px;
+  padding: 0 !important;
   min-height: 0;
   height: 1.3em;
 }
@@ -329,10 +328,44 @@
 }
 
 .ts-hr-row {
-  display: flex;
-  flex-wrap: wrap-reverse;
+  display: grid;
   gap: 16px;
-  align-items: flex-end;
+  align-items: start;
+  justify-content: start;
+  grid-template-columns: auto auto auto;
+  grid-template-areas: "users stats notifications";
+}
+
+#hr-userlist-section { grid-area: users; justify-self: start; }
+#hr-stats-section { grid-area: stats; justify-self: start; }
+#hr-notifications-section { grid-area: notifications; justify-self: start; } 
+
+@media (max-width: 1750px) {
+  .ts-hr-row {
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "users stats"
+      "users notifications";
+  }
+}
+
+@media (max-width: 1400px) {
+  .ts-hr-row {
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "stats notifications"
+      "users users";
+  }
+}
+
+@media (max-width: 925px) {
+  .ts-hr-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "stats"
+      "notifications"
+      "users";
+  }
 }
 
 #hr-userlist-section,
