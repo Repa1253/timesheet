@@ -104,7 +104,8 @@ class EntryMapper extends QBMapper {
   public function calculateOvertimeAggregate(string $userId): ?array {
     $qb = $this->db->getQueryBuilder();
 
-    $totalMinutesExpr  = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 ELSE GREATEST(0, end_min - start_min - break_minutes) END)';
+    $deltaExpr = '((CASE WHEN end_min < start_min THEN end_min + 1440 ELSE end_min END) - start_min - COALESCE(break_minutes, 0))';
+    $totalMinutesExpr  = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 ELSE CASE WHEN ' . $deltaExpr . ' < 0 THEN 0 ELSE ' . $deltaExpr . ' END END)';
     $totalWorkdaysExpr = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 ELSE 1 END)';
 
     $qb->select('user_id')

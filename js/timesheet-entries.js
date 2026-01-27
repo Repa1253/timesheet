@@ -58,7 +58,7 @@
     const endMin   = entry?.endMin ?? null;
     const brkMin   = entry?.breakMinutes ?? 0;
 
-    const durMin = (startMin != null && endMin != null) ? Math.max(0, endMin - startMin - brkMin) : null;
+    const durMin = U.calcWorkMinutes(startMin, endMin, brkMin);
     const diffMin = (durMin != null && dailyMin != null) ? (durMin - dailyMin) : null;
 
     const warning = U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap);
@@ -316,7 +316,7 @@
 
       const startMin = U.hmToMin(startVal);
       const endMin   = U.hmToMin(endVal);
-      const duration = (startMin != null && endMin != null) ? Math.max(0, endMin - startMin - breakMin) : null;
+      const duration = U.calcWorkMinutes(startMin, endMin, breakMin);
 
       let stateCode;
       if (isHr) {
