@@ -5,22 +5,23 @@
   if (!root) return;
 
   // Helper function to read JSON from a script tag
-  function readJson(id, fallback) {
+  function readJson(id) {
     const element = document.getElementById(id);
-    if (!element) return fallback;
+    if (!element) return [];
     try {
-      return JSON.parse(element.textContent || "null") ?? fallback;
+      return JSON.parse(element.textContent || "null") ?? [];
     } catch (e) {
       console.warn("Timesheet admin settings: invalid JSON in", id, e);
-      return fallback;
+      return [];
     }
   }
 
-  const allGroups = readJson('timesheet-all-groups-data', []);
-  let rules = readJson('timesheet-hr-rules-data', []);
+  const allGroups = readJson('timesheet-all-groups-data');
+  let rules = readJson('timesheet-hr-rules-data');
 
   const rulesEl = document.getElementById('timesheet-hr-rules');
   const addBtn = document.getElementById('timesheet-add-hr-rule');
+  const specialDaysOvertime = document.getElementById('timesheet-specialdays-overtime');
 
   function notify(msg) {
     try {
@@ -220,5 +221,49 @@
     await persistAndRender(rules);
   });
 
+  specialDaysOvertime.addEventListener('change', async (e) => {
+    const checked = e.target.checked;
+
+    try {
+      const url = OC.generateUrl('/apps/timesheet/settings/specialdays_check');
+      const formData = new FormData();
+      formData.append('specialDaysCheck', JSON.stringify(checked));
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'requesttoken': OC.requestToken },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Failed to save special days check setting:', error);
+      notify(t('timesheet', 'Saving failed'));
+    }
+  });
+
+  async function loadInitialData() {
+    try {
+      const url = OC.generateUrl('/apps/timesheet/settings/specialdays_check');
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'requesttoken': OC.requestToken },
+      });
+
+      if (response.ok) {
+        const { check } = await response.json();
+        specialDaysOvertime.checked = check;
+      } else {
+        console.error('Failed to load special days check setting:', response.status);
+      }
+    } catch (error) {
+      console.error('Error loading special days check setting:', error);
+    }
+  }
+
   render();
+  loadInitialData();
 })();

@@ -1,6 +1,7 @@
 <?php
   $allGroups     = $_['allGroups'] ?? [];
   $hrAccessRules = $_['hrAccessRules'] ?? [];
+  $countSpecialDaysAsOvertime = (bool)($_['countSpecialDaysAsOvertime'] ?? false);
 ?>
 
 <div id="timesheet-admin-settings" class="section">
@@ -24,6 +25,25 @@
     <?php print_unescaped(json_encode(array_values($hrAccessRules), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)); ?>
   </script>
 
+  <hr class="ts-divider" />
+
+  <h2><?php p($l->t('Overtime calculation')); ?></h2>
+  <p class="ts-hint">
+    <?php p($l->t('Control how weekends and public holidays affect the expected working time.')); ?>
+  </p>
+
+  <div class="ts-setting">
+    <input type="checkbox" class="checkbox" id="timesheet-specialdays-overtime" data-setting="countSpecialDaysAsOvertime" 
+      <?php if ($countSpecialDaysAsOvertime) { print_unescaped('checked="checked"'); } ?>
+    />
+    <label for="timesheet-specialdays-overtime">
+      <?php p($l->t('Count weekends and public holidays as overtime only')); ?>
+    </label>
+    <div class="ts-setting-desc">
+      <?php p($l->t('If enabled, weekends and public holidays will not count as regular workdays. Any hours worked on these days are treated as overtime and do not create minus hours.')); ?>
+    </div>
+  </div>
+
   <style>
     #timesheet-hr-rules { margin: 12px 0 10px; display: grid; gap: 12px; }
     .ts-hint { margin: 8px 0 12px; opacity: .85; max-width: 900px; }
@@ -41,5 +61,9 @@
     .ts-chip-remove:hover { opacity: 1; }
     .ts-rule-empty { opacity: .7; font-style: italic; }
     .ts-rule-select { max-width: 420px; }
+
+    .ts-divider { margin: 18px 0 14px; border: 0; border-top: 1px solid var(--color-border); }
+    .ts-setting { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-border); }
+    .ts-setting-desc { margin-top: 4px; opacity: .85; font-size: 13px; line-height: 1.4;}
   </style>
 </div>

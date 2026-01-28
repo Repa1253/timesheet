@@ -26,9 +26,8 @@ return [
     ['name' => 'holiday#getHolidays', 'url' => '/api/holidays', 'verb' => 'GET'],
 
     // Admin settings
-    ['name' => 'settings#saveAdmin',          'url' => '/admin/settings',           'verb' => 'POST'],
-    ['name' => 'settings#updateHrGroups',     'url' => '/settings/hr_groups',       'verb' => 'POST'],
-    ['name' => 'settings#updateHrUserGroups', 'url' => '/settings/hr_user_groups',  'verb' => 'POST'],
-    ['name' => 'settings#saveHrAccessRules',  'url' => '/settings/hr_access_rules', 'verb' => 'POST'],
+    ['name' => 'settings#saveHrAccessRules',    'url' => '/settings/hr_access_rules',   'verb' => 'POST'],
+    ['name' => 'settings#saveSpecialDaysCheck', 'url' => '/settings/specialdays_check', 'verb' => 'POST'],
+    ['name' => 'settings#loadSpecialDaysCheck', 'url' => '/settings/specialdays_check', 'verb' => 'GET'],
   ],
 ];

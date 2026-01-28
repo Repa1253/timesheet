@@ -136,4 +136,40 @@ class SettingsController extends Controller {
     }
     return $final;
   }
+
+  /**
+   * @AdminRequired
+   * @CSRFCheck
+   */
+  public function saveSpecialDaysCheck(): DataResponse {
+    $user = $this->userSession->getUser();
+    $uid = $user?->getUID();
+    if (!$uid || !$this->groupManager->isAdmin($uid)) {
+      return new DataResponse(['message' => 'Forbidden'], 403);
+    }
+
+    $raw = (string)$this->request->getParam('specialDaysCheck', 'false');
+    $checked = filter_var($raw, FILTER_VALIDATE_BOOLEAN);
+
+    $this->appConfig->setAppValueString('specialdays_check', $checked ? '1' : '0');
+
+    return new DataResponse(['check' => $checked]);
+  }
+
+  /**
+   * @AdminRequired
+   * @CSRFCheck
+   */
+  public function loadSpecialDaysCheck(): DataResponse {
+    $user = $this->userSession->getUser();
+    $uid = $user?->getUID();
+    if (!$uid || !$this->groupManager->isAdmin($uid)) {
+      return new DataResponse(['message' => 'Forbidden'], 403);
+    }
+
+    $raw = $this->appConfig->getAppValueString('specialdays_check', '0');
+    $checked = $raw === '1';
+
+    return new DataResponse(['check' => $checked]);
+  }
 }
