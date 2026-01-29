@@ -47,7 +47,7 @@
   }
 
   // Create a table row element for the given date and entry data
-  function createEntryRow(dateObj, entry, holidayMap = {}, dailyMin = null) {
+  function createEntryRow(dateObj, entry, holidayMap = {}, dailyMin = null, specialDaysEnabled = false) {
     const dateStr = U.toLocalIsoDate(dateObj);
     const dayIndex = dateObj.getDay();
     const isHoliday = Object.prototype.hasOwnProperty.call(holidayMap, dateStr);
@@ -59,7 +59,7 @@
     const brkMin   = entry?.breakMinutes ?? 0;
 
     const durMin = U.calcWorkMinutes(startMin, endMin, brkMin);
-    const diffMin = (durMin != null && dailyMin != null) ? (durMin - dailyMin) : null;
+    const diffMin = (durMin == null) ? null : (specialDaysEnabled && (isHoliday || isWeekend) ? durMin : (dailyMin != null ? (durMin - dailyMin) : null));
 
     const warning = U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap);
 
@@ -74,6 +74,7 @@
     tr.dataset.date = dateStr;
     if (entry?.id) tr.dataset.id = entry.id;
 
+    tr.dataset.isSpecialDay = (isHoliday || isWeekend) ? '1' : '0';
     tr.dataset.savedStart = startStr;
     tr.dataset.savedEnd = endStr;
     tr.dataset.savedBreak = breakStr;
@@ -111,14 +112,17 @@
     if (!tbody) return;
 
     let totalMinutes = 0;
-    let workedDays   = 0;
+    let baselineDays   = 0;
+
+    const specialDaysEnabled = tbody.dataset.specialDays === '1';
 
     tbody.querySelectorAll('tr').forEach(row => {
       const durText = row.querySelector('.ts-duration')?.textContent.trim();
       const durMin  = U.hmToMin(durText);
       if (durMin != null) {
         totalMinutes += durMin;
-        workedDays++;
+        const isSpecialDay = row.dataset.isSpecialDay === '1' || row.classList.contains('is-weekend-row');
+        if (!(specialDaysEnabled && isSpecialDay)) baselineDays++;
       }
     });
 
@@ -129,7 +133,7 @@
     const overtimeEl = root.querySelector('#overtime-month');
 
     const dailyMin = getEffectiveDailyMin(container);
-    const overtime = totalMinutes - (workedDays * dailyMin);
+    const overtime = totalMinutes - (baselineDays * dailyMin);
 
     if (workedEl)   workedEl.textContent   = U.minToHm(totalMinutes);
     if (overtimeEl) overtimeEl.textContent = U.minToHm(overtime);
@@ -190,11 +194,14 @@
     const container = userId ? document.getElementById('hr-user-entries') : null;
     const dailyMin = getEffectiveDailyMin(container);
 
+    const specialDaysEnabled = await loadSpecialDaysCheck();
+    body.dataset.specialDays = specialDaysEnabled ? '1' : '0';
+
     const frag = document.createDocumentFragment();
     for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
       const dateKey = U.toLocalIsoDate(d);
       const entry = entryMap[dateKey];
-      const row = createEntryRow(new Date(d), entry, holidayMap, dailyMin);
+      const row = createEntryRow(new Date(d), entry, holidayMap, dailyMin, specialDaysEnabled);
       frag.appendChild(row);
     }
     body.appendChild(frag);
@@ -408,6 +415,15 @@
       console.error('❌ Auto-Save failed:', error);
     } finally {
       delete row.dataset.saving;
+    }
+  }
+
+  async function loadSpecialDaysCheck() {
+    try {
+      const r = await TS.api('/settings/specialdays_check');
+      return !!r?.check;
+    } catch (_) {
+      return false;
     }
   }
 

@@ -101,12 +101,16 @@ class EntryMapper extends QBMapper {
     return $qb->executeQuery()->fetchAll();
   }
 
-  public function calculateOvertimeAggregate(string $userId): ?array {
+  public function calculateOvertimeAggregate(string $userId, bool $excludeSpecialDays): ?array {
     $qb = $this->db->getQueryBuilder();
 
     $deltaExpr = '((CASE WHEN end_min < start_min THEN end_min + 1440 ELSE end_min END) - start_min - COALESCE(break_minutes, 0))';
     $totalMinutesExpr  = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 ELSE CASE WHEN ' . $deltaExpr . ' < 0 THEN 0 ELSE ' . $deltaExpr . ' END END)';
     $totalWorkdaysExpr = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 ELSE 1 END)';
+
+    if ($excludeSpecialDays) {
+      $totalWorkdaysExpr = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 WHEN WEEKDAY(`work_date`) >= 5 THEN 0 ELSE 1 END)';
+    }
 
     $qb->select('user_id')
       ->selectAlias($qb->createFunction('MIN(`work_date`)'), 'min_date')
@@ -125,10 +129,28 @@ class EntryMapper extends QBMapper {
     }
 
     return [
-        'from'          => $row['min_date'],
-        'to'            => $row['max_date'],
-        'totalMinutes'  => (int) $row['total_minutes'],
-        'totalWorkdays' => (int) $row['total_workdays'],
+      'from'          => $row['min_date'],
+      'to'            => $row['max_date'],
+      'totalMinutes'  => (int) $row['total_minutes'],
+      'totalWorkdays' => (int) $row['total_workdays'],
     ];
+  }
+
+  public function countWorkdaysOnDates(string $userId, array $ymdDates): int {
+    if ($ymdDates === []) {
+      return 0;
+    }
+
+    $qb = $this->db->getQueryBuilder();
+    $qb->selectAlias($qb->createFunction('COUNT(*)'), 'cnt')
+      ->from($this->getTableName())
+      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
+      ->andWhere($qb->expr()->in('work_date', $qb->createNamedParameter(array_values($ymdDates), IQueryBuilder::PARAM_STR_ARRAY)))
+      ->andWhere($qb->expr()->isNotNull('start_min'))
+      ->andWhere($qb->expr()->isNotNull('end_min'))
+      ->andWhere('WEEKDAY(`work_date`) < 5');
+
+    $row = $qb->executeQuery()->fetch();
+    return (int) $row['cnt'] ?? 0;
   }
 }

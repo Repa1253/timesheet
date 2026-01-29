@@ -72,6 +72,10 @@
     "Define access rules: HR groups may access timesheets of the employee groups.": "Zugriffsregeln definieren: HR-Gruppen können auf die Arbeitszeitnachweise der Mitarbeitendengruppen zugreifen.",
     "Timesheet settings": "Arbeitszeitnachweis – Einstellungen",
     "Add new rule": "Neue Regel hinzufügen",
+    "Overtime calculation": "Überstunden-Berechnung",
+    "Control how weekends and public holidays affect the expected working time.": "Steuert, wie Wochenenden und Feiertage die erwartete Arbeitszeit beeinflussen.",
+    "Count weekends and public holidays as overtime only": "Wochenenden und Feiertage nur als Überstunden zählen",
+    "If enabled, weekends and public holidays will not count as regular workdays. Any hours worked on these days are treated as overtime and do not create minus hours.": "Wenn aktiviert, zählen Wochenenden und Feiertage nicht als reguläre Arbeitstage. Alle an diesen Tagen geleisteten Stunden werden als Überstunden behandelt und erzeugen keine Minusstunden.",
 
     "_comment": "HrNotificationJob.php translations",
     "Timesheet Notifications": "Arbeitszeitnachweis-Benachrichtigungen",

@@ -12,6 +12,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\IDBConnection;
 use OCA\Timesheet\Service\HrService;
+use OCA\Timesheet\Db\UserConfigMapper;
 
 class ConfigController extends Controller {
 
@@ -35,6 +36,7 @@ class ConfigController extends Controller {
     IUserSession $userSession,
     IDBConnection $db,
     private HrService $hrService,
+    private UserConfigMapper $userConfigMapper,
   ) {
     parent::__construct($appName, $request);
     $this->userSession  = $userSession;
@@ -50,20 +52,8 @@ class ConfigController extends Controller {
   */
   public function getUserConfig(string $userId): DataResponse {
     $this->assertConfigAccess($userId);
-
-    $qb = $this->db->getQueryBuilder();
-    $qb->select('work_minutes', 'state')
-      ->from('ts_user_config')
-      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
-    $row = $qb->executeQuery()->fetch();
-    if ($row === false) {
-      // If no config exists for this user, return null values
-      return new DataResponse(['dailyMin' => null, 'state' => null], Http::STATUS_OK);
-    }
-
-    $dailyMin = (int)$row['work_minutes'];
-    $state = $row['state'];
-    return new DataResponse(['dailyMin' => $dailyMin, 'state' => $state], Http::STATUS_OK);
+    $data = $this->userConfigMapper->getConfigData($userId);
+    return new DataResponse($data, Http::STATUS_OK);
   }
 
   /**
@@ -76,28 +66,8 @@ class ConfigController extends Controller {
   */
   public function setUserConfig(string $userId, int $dailyMin, string $state): DataResponse {
     $this->assertConfigAccess($userId);
-
-    // Try updating existing config
-    $qb = $this->db->getQueryBuilder();
-    $qb->update('ts_user_config')
-      ->set('work_minutes', $qb->createNamedParameter($dailyMin))
-      ->set('state', $qb->createNamedParameter($state))
-      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
-     $affectedRows = $qb->executeStatement();
-
-     if ($affectedRows === 0) {
-      // No existing row for this user: insert a new config
-      $qbInsert = $this->db->getQueryBuilder();
-      $qbInsert->insert('ts_user_config')
-        ->values([
-          'user_id'      => $qbInsert->createNamedParameter($userId),
-          'work_minutes' => $qbInsert->createNamedParameter($dailyMin),
-          'state'        => $qbInsert->createNamedParameter($state)
-        ]);
-      $qbInsert->executeStatement();
-    }
-
-    return new DataResponse(['dailyMin' => $dailyMin, 'state' => $state], Http::STATUS_OK);
+    $data = $this->userConfigMapper->upsertConfigData($userId, $dailyMin, $state);
+    return new DataResponse($data, Http::STATUS_OK);
   }
 
   /**

@@ -5,6 +5,31 @@ namespace OCA\Timesheet\Db;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
+/**
+ * @method string getUserId()
+ * @method void setUserId(string $userId)
+ * 
+ * @method string getWorkDate()
+ * @method void setWorkDate(string $workDate)
+ * 
+ * @method ?int getStartMin()
+ * @method void setStartMin(?int $startMin)
+ * 
+ * @method ?int getEndMin()
+ * @method void setEndMin(?int $endMin)
+ * 
+ * @method int getBreakMinutes()
+ * @method void setBreakMinutes(int $breakMinutes)
+ * 
+ * @method ?string getComment()
+ * @method void setComment(?string $comment)
+ * 
+ * @method int getCreatedAt()
+ * @method void setCreatedAt(int $createdAt)
+ * 
+ * @method int getUpdatedAt()
+ * @method void setUpdatedAt(int $updatedAt)
+ */
 class Entry extends Entity implements JsonSerializable {
   /** @var string */
   protected $userId;
