@@ -154,9 +154,10 @@
   border: none;
   background: transparent;
   margin: 0;
-  padding: 0 !important;
+  padding: 0 5px !important;
   min-height: 0;
   height: 1.3em;
+  resize: none;
 }
 
 #ts-table input[type="number"],

@@ -9,6 +9,7 @@
 
   const S = TS.state;
   const U = TS.util;
+  const EN = TS.entries;
 
   TS.main = TS.main || {};
   const MAIN = TS.main;
@@ -145,6 +146,20 @@
     document.getElementById('export-hr-xlsx')?.addEventListener('click', () => TS.export.handleExportClick('hr'));
   }
 
+  // Bind auto-grow for comment textareas
+  function bindAutoGrowTextareas() {
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (el && el.matches('textarea.commentInput')) autogrowTextarea(el);
+    });
+  }
+
+  // Auto-grow textarea function
+  function autogrowTextarea(textarea) {
+    textarea.style.height = '21px';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
   // Initialize main module
   async function init() {
     TS.dom.refresh();
@@ -157,7 +172,7 @@
     bindTabSwitching();
     bindAutoSave();
     bindExportButtons();
-
+    bindAutoGrowTextareas();
     updateMonthDisplay();
     updateHrMonthDisplay();
 
@@ -166,6 +181,7 @@
     await TS.entries.loadUserEntries(null, S.currentMonth);
     await cfgReady;
     await TS.entries.refreshOvertimeTotal(S.currentUserId, document);
+    document.querySelectorAll('textarea.commentInput').forEach(autogrowTextarea);
 
     const initRow = document.querySelector('#ts-body tr');
     if (initRow) TS.entries.updateWorkedHours(initRow);
