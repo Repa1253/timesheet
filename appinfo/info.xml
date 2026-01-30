@@ -4,7 +4,7 @@
 	<id>timesheet</id>
 
 	<name>Timesheet</name>
-	<name lang="de">Arbeitszeitnachweis</name>
+	<name lang="de">Arbeitszeitnachweis (Timesheet)</name>
 
 	<summary>Timesheet tracking in Nextcloud with HR dashboard, overtime and export</summary>
 	<summary lang="de">Zeiterfassung in Nextcloud mit HR-Dashboard, Überstunden und Export</summary>
