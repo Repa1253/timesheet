@@ -213,6 +213,7 @@
   async function deleteEntryForRow(row) {
     const entryId = row.dataset.id || null;
     if (!entryId) return;
+    if (!U.ensureWriteAllowed || !U.ensureWriteAllowed()) return;
 
     const startInput   = row.querySelector('.startTime');
     const endInput     = row.querySelector('.endTime');
@@ -357,6 +358,7 @@
       }
     }
 
+    if (!U.ensureWriteAllowed || !U.ensureWriteAllowed()) return;
     row.dataset.saving = '1';
 
     try {

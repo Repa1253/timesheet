@@ -9,7 +9,14 @@
 
   // Application identifiers
   S.appName = "timesheet";
-  S.token = (window.OC && OC.requestToken) ? OC.requestToken : null;
+  function getRequestToken() {
+    try {
+      if (window.OC && OC.requestToken) return String(OC.requestToken);
+    } catch {}
+    return null;
+  }
+  S.token = getRequestToken();
+  S.sessionExpiredNotified = false;
 
   // Current user ID
   S.currentUserId = (function getCurrentUserId() {
@@ -86,6 +93,27 @@
     } catch (error) {
       console.log(msg);
     }
+  }
+
+  function notifySessionExpired() {
+    if (S.sessionExpiredNotified) return;
+    S.sessionExpiredNotified = true;
+    notify(t(S.appName, 'Session expired. Please reload the page.'));
+  }
+
+  function refreshRequestToken() {
+    const token = getRequestToken();
+    if (token) S.token = token;
+    return token;
+  }
+
+  function ensureWriteAllowed() {
+    const token = refreshRequestToken();
+    if (!token) {
+      notifySessionExpired();
+      return false;
+    }
+    return true;
   }
 
   // Localization utilities
@@ -312,16 +340,27 @@
 
   // API utility
   async function api(path, options = {}) {
+    const method = String(options.method || 'GET').toUpperCase();
+    const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+    const token = isWrite ? (ensureWriteAllowed() ? S.token : null) : refreshRequestToken();
+    if (isWrite && !token) {
+      throw new Error('Session expired');
+    }
+
     const url = OC.generateUrl(`/apps/${S.appName}${path}`);
     const res = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'requesttoken': S.token,
+        ...(token ? { 'requesttoken': token } : {}),
         ...(options.headers || {})
       }
     });
     
+    if (res.status === 401 || res.status === 403) {
+      notifySessionExpired();
+    }
+
     if (!res.ok) {
       const errText = await res.text().catch(() => res.statusText);
       throw new Error(errText || `HTTP ${res.status}`);
@@ -349,5 +388,6 @@
   U.toLocalMonthStr = toLocalMonthStr;
   U.firstOfMonth = firstOfMonth;
   U.addMonths = addMonths;
+  U.ensureWriteAllowed = ensureWriteAllowed;
   TS.api = api;
 })();
