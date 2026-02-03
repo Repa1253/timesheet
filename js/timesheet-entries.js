@@ -10,6 +10,40 @@
   TS.entries = TS.entries || {};
   const EN = TS.entries;
 
+  // Cache rule thresholds per user
+  S.ruleThresholdsByUser = S.ruleThresholdsByUser || new Map();
+
+  async function loadRuleThresholds(userId = null) {
+    const uid = userId || S.currentUserId;
+    if (!uid) {
+      S.ruleThresholds = TS.util.RULE_DEFAULTS;
+      return S.ruleThresholds;
+    }
+
+    try {
+      const path = userId ? `/api/rules/effective/${encodeURIComponent(uid)}` : '/api/rules/effective';
+      const data = await TS.api(path);
+      if (data && typeof data === 'object') {
+        S.ruleThresholdsByUser.set(uid, data);
+        if (!userId || uid === S.currentUserId) S.ruleThresholds = data;
+        return data;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to load rule thresholds:', error);
+    }
+
+    // fallback
+    const fallback = TS.util.RULE_DEFAULTS;
+    S.ruleThresholdsByUser.set(uid, fallback);
+    if (!userId || uid === S.currentUserId) S.ruleThresholds = fallback;
+    return fallback;
+  }
+
+  function getRuleThresholds(userId = null) {
+    const uid = userId || S.currentUserId;
+    return (uid && S.ruleThresholdsByUser.get(uid)) || S.ruleThresholds || TS.util.RULE_DEFAULTS;
+  }
+
   // Cache for holidays data
   async function getHolidays(year, state) {
     if (!state) return {};
@@ -47,7 +81,7 @@
   }
 
   // Create a table row element for the given date and entry data
-  function createEntryRow(dateObj, entry, holidayMap = {}, dailyMin = null, specialDaysEnabled = false) {
+  function createEntryRow(dateObj, entry, holidayMap = {}, dailyMin = null, specialDaysEnabled = false, thresholds = null) {
     const dateStr = U.toLocalIsoDate(dateObj);
     const dayIndex = dateObj.getDay();
     const isHoliday = Object.prototype.hasOwnProperty.call(holidayMap, dateStr);
@@ -61,7 +95,7 @@
     const durMin = U.calcWorkMinutes(startMin, endMin, brkMin);
     const diffMin = (durMin == null) ? null : (specialDaysEnabled && (isHoliday || isWeekend) ? durMin : (dailyMin != null ? (durMin - dailyMin) : null));
 
-    const warning = U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap);
+    const warning = U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap, thresholds);
 
     const startStr = startMin != null ? U.minToHm(startMin) : '';
     const endStr   = endMin   != null ? U.minToHm(endMin)   : '';
@@ -165,6 +199,8 @@
       ? `/api/entries?user=${encodeURIComponent(userId)}&from=${fromStr}&to=${toStr}`
       : `/api/entries?from=${fromStr}&to=${toStr}`;
 
+    const thresholds = await loadRuleThresholds(userId || S.currentUserId);
+
     const entries = await TS.api(query).catch(error => {
       console.error('❌ Failed to load entries:', error);
       return [];
@@ -201,7 +237,7 @@
     for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
       const dateKey = U.toLocalIsoDate(d);
       const entry = entryMap[dateKey];
-      const row = createEntryRow(new Date(d), entry, holidayMap, dailyMin, specialDaysEnabled);
+      const row = createEntryRow(new Date(d), entry, holidayMap, dailyMin, specialDaysEnabled, thresholds);
       frag.appendChild(row);
     }
     body.appendChild(frag);
@@ -339,7 +375,8 @@
       const baseDailyMin = getEffectiveDailyMin(isHr ? document.getElementById('hr-user-entries') : null);
       const diffMin = (duration != null && baseDailyMin != null) ? (duration - baseDailyMin) : null;
 
-      if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: breakMin }, workDate, holidayMap);
+      const thresholds = getRuleThresholds(isHr ? document.querySelector('#hr-user-title span')?.textContent : S.currentUserId);
+      if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: breakMin }, workDate, holidayMap, thresholds);
       if (durCell)  durCell.textContent  = U.minToHm(duration);
       if (diffCell) diffCell.textContent = U.minToHm(diffMin);
 
@@ -434,6 +471,8 @@
   EN.getEffectiveDailyMin = getEffectiveDailyMin;
   EN.createEntryRow = createEntryRow;
   EN.loadUserEntries = loadUserEntries;
+  EN.loadRuleThresholds = loadRuleThresholds;
+  EN.getRuleThresholds = getRuleThresholds;
   EN.updateWorkedHours = updateWorkedHours;
   EN.refreshOvertimeTotal = refreshOvertimeTotal;
   EN.deleteEntryForRow = deleteEntryForRow;

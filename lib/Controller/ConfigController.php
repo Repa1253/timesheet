@@ -13,6 +13,7 @@ use OCP\IUserSession;
 use OCP\IDBConnection;
 use OCA\Timesheet\Service\HrService;
 use OCA\Timesheet\Db\UserConfigMapper;
+use OCA\Timesheet\Service\GroupRuleService;
 
 class ConfigController extends Controller {
 
@@ -37,6 +38,7 @@ class ConfigController extends Controller {
     IDBConnection $db,
     private HrService $hrService,
     private UserConfigMapper $userConfigMapper,
+    private GroupRuleService $groupRuleService,
   ) {
     parent::__construct($appName, $request);
     $this->userSession  = $userSession;
@@ -227,6 +229,31 @@ class ConfigController extends Controller {
       'negativeOvertimeEnabled' => $negativeOvertimeEnabled,
       'negativeOvertimeThresholdMinutes' => $negativeOvertimeThresholdMinutes,
     ], Http::STATUS_OK);
+  }
+
+  /**
+   * @NoAdminRequired
+   * @NoCSRFRequired
+   * @Route("/api/rules/effective", methods={"GET"})
+   *
+   * Returns effective rule thresholds for the current user.
+   */
+  public function getEffectiveRulesSelf(): DataResponse {
+    $rules = $this->groupRuleService->getEffectiveRules(null);
+    return new DataResponse($rules, Http::STATUS_OK);
+  }
+
+  /**
+   * @NoAdminRequired
+   * @NoCSRFRequired
+   * @Route("/api/rules/effective/{userId}", methods={"GET"})
+   *
+   * Returns effective rule thresholds for the given user (HR or self access).
+   */
+  public function getEffectiveRulesForUser(string $userId): DataResponse {
+    $this->assertConfigAccess($userId);
+    $rules = $this->groupRuleService->getEffectiveRules($userId);
+    return new DataResponse($rules, Http::STATUS_OK);
   }
     
   /**

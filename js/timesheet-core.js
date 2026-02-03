@@ -18,6 +18,16 @@
   S.token = getRequestToken();
   S.sessionExpiredNotified = false;
 
+  const RULE_DEFAULTS = {
+    breakShortMinutes: 30,
+    breakShortHours: 6,
+    breakLongMinutes: 45,
+    breakLongHours: 9,
+    maxHours: 10,
+  };
+
+  S.ruleThresholds = { ...RULE_DEFAULTS };
+
   // Current user ID
   S.currentUserId = (function getCurrentUserId() {
     try {
@@ -229,7 +239,8 @@
   }
 
   // Checks timesheet entry against rules, returns issues as string
-  function checkRules(entry, dateStr = null, holidayMap = {}) {
+  function checkRules(entry, dateStr = null, holidayMap = {}, thresholds = null) {
+    const tds = thresholds || S.ruleThresholds || RULE_DEFAULTS;
     const start = entry.startMin ?? hmToMin(entry.start);
     let end = entry.endMin ?? hmToMin(entry.end);
     if (start == null || end == null) return '';
@@ -241,11 +252,13 @@
 
     const issues = [];
 
-    if (dur > 10 * 60) issues.push(t(S.appName, 'Above maximum time')); // over 10h work not allowed
+    if (dur > (tds.maxHours || RULE_DEFAULTS.maxHours) * 60) {
+      issues.push(t(S.appName, 'Above maximum time'));
+    }
 
-    if (dur > 9 * 60 && brk < 45) { // over 9h work requires at least 45min break
+    if (dur > (tds.breakLongHours || RULE_DEFAULTS.breakLongHours) * 60 && brk < (tds.breakLongMinutes || RULE_DEFAULTS.breakLongMinutes)) {
       issues.push(t(S.appName, 'Break too short'));
-    } else if (dur > 6 * 60 && brk < 30) { // over 6h work requires at least 30min break
+    } else if (dur > (tds.breakShortHours || RULE_DEFAULTS.breakShortHours) * 60 && brk < (tds.breakShortMinutes || RULE_DEFAULTS.breakShortMinutes)) {
       issues.push(t(S.appName, 'Break too short'));
     }
 
@@ -390,4 +403,5 @@
   U.addMonths = addMonths;
   U.ensureWriteAllowed = ensureWriteAllowed;
   TS.api = api;
+  U.RULE_DEFAULTS = RULE_DEFAULTS;
 })();

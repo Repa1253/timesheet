@@ -177,7 +177,9 @@
     updateHrMonthDisplay();
 
     const cfgReady = S.currentUserId ? TS.config.loadUserConfig(S.currentUserId) : Promise.resolve();
+    const rulesReady = TS.entries.loadRuleThresholds();
 
+    await rulesReady;
     await TS.entries.loadUserEntries(null, S.currentMonth);
     await cfgReady;
     await TS.entries.refreshOvertimeTotal(S.currentUserId, document);

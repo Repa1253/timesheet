@@ -8,8 +8,12 @@
   <h2><?php p($l->t('Timesheet settings')); ?></h2>
 
   <p class="ts-hint">
-    <?php p($l->t('Define access rules: HR groups may access timesheets of the employee groups. Each employee group can appear in only one rule.')); ?>
+    <?php p($l->t('Define access rules: HR groups may access timesheets of the employee groups. Set time rules for those employee groups in each rule. Each employee group can appear in only one rule.')); ?>
   </p>
+
+  <?php if (empty($allGroups)) : ?>
+    <div class="ts-empty"><?php p($l->t('No groups found. Create at least one group to configure rules.')); ?></div>
+  <?php endif; ?>
 
   <div id="timesheet-hr-rules"></div>
 
@@ -65,5 +69,11 @@
     .ts-divider { margin: 18px 0 14px; border: 0; border-top: 1px solid var(--color-border); }
     .ts-setting { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-border); }
     .ts-setting-desc { margin-top: 4px; opacity: .85; font-size: 13px; line-height: 1.4;}
+    .ts-empty { padding: 10px; border: 1px dashed var(--color-border); border-radius: 8px; }
+    .ts-inline { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .ts-rule-section { margin-top: 10px; border-top: 1px dashed var(--color-border); padding-top: 10px; }
+    .ts-rule-section-title { font-weight: 700; margin-bottom: 6px; }
+    .ts-rule-grid-compact { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 980px) { .ts-rule-grid-compact { grid-template-columns: 1fr; } }
   </style>
 </div>

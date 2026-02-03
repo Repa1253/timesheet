@@ -12,6 +12,14 @@ use OCP\IUserSession;
 
 class SettingsController extends Controller {
 
+  private const GROUP_DEFAULTS = [
+    'breakShortMinutes' => 30,
+    'breakShortHours' => 6,
+    'breakLongMinutes' => 45,
+    'breakLongHours' => 9,
+    'maxHours' => 10,
+  ];
+
   public function __construct(
     string $appName,
     IRequest $request,
@@ -86,19 +94,15 @@ class SettingsController extends Controller {
     }
 
     $clean = $this->sanitizeRules($decoded);
+    $dupes = $this->findDuplicateUserGroups($clean);
+    if (!empty($dupes)) {
+      return new DataResponse([
+        'message' => 'Duplicate employee groups in rules',
+        'groups' => array_values($dupes),
+      ], 400);
+    }
 
     $this->appConfig->setAppValueString('hr_access_rules', json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-
-    $allHr = [];
-    $allUsers = [];
-    foreach ($clean as $r) {
-      $allHr = array_merge($allHr, $r['hrGroups']);
-      $allUsers = array_merge($allUsers, $r['userGroups']);
-    }
-    $allHr = array_values(array_unique($allHr));
-    $allUsers = array_values(array_unique($allUsers));
-    $this->appConfig->setAppValueString('hr_groups', json_encode($allHr, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-    $this->appConfig->setAppValueString('hr_user_groups', json_encode($allUsers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
     return new DataResponse(['rules' => $clean]);
   }
@@ -117,13 +121,29 @@ class SettingsController extends Controller {
       $hrGroups = $this->cleanGroupList($hrGroups);
       $userGroups = $this->cleanGroupList($userGroups);
 
-      $out[] = [
+      $out[] = array_merge([
         'id' => $id,
         'hrGroups' => $hrGroups,
         'userGroups' => $userGroups,
-      ];
+      ], $this->sanitizeRuleThresholds($r));
     }
     return $out;
+  }
+
+  /**
+   * @param array $item
+   * @return array<string, int|float>
+   */
+  private function sanitizeRuleThresholds(array $item): array {
+    $d = self::GROUP_DEFAULTS;
+
+    return [
+      'breakShortMinutes'      => $this->clampInt($item['breakShortMinutes']      ?? $d['breakShortMinutes'], 0, 600),
+      'breakShortHours'        => $this->clampFloat($item['breakShortHours']      ?? $d['breakShortHours'],   0, 24),
+      'breakLongMinutes'       => $this->clampInt($item['breakLongMinutes']       ?? $d['breakLongMinutes'],  0, 600),
+      'breakLongHours'         => $this->clampFloat($item['breakLongHours']       ?? $d['breakLongHours'],    0, 24),
+      'maxHours'               => $this->clampFloat($item['maxHours']             ?? $d['maxHours'],          0, 24),
+    ];
   }
 
   private function cleanGroupList(array $groups): array {
@@ -135,6 +155,28 @@ class SettingsController extends Controller {
       if ($this->groupManager->groupExists($g)) $final[] = $g;
     }
     return $final;
+  }
+
+  /**
+   * @param array<int, array<string, mixed>> $rules
+   * @return string[]
+   */
+  private function findDuplicateUserGroups(array $rules): array {
+    $seen = [];
+    $dupes = [];
+    foreach ($rules as $rule) {
+      $userGroups = isset($rule['userGroups']) && is_array($rule['userGroups']) ? $rule['userGroups'] : [];
+      foreach ($userGroups as $g) {
+        $key = (string)$g;
+        if ($key === '') continue;
+        if (isset($seen[$key])) {
+          $dupes[$key] = $key;
+        } else {
+          $seen[$key] = true;
+        }
+      }
+    }
+    return array_values($dupes);
   }
 
   /**
@@ -171,5 +213,18 @@ class SettingsController extends Controller {
     $checked = $raw === '1';
 
     return new DataResponse(['check' => $checked]);
+  }
+
+  private function clampInt($value, int $min, int $max): int {
+    if (!is_numeric($value)) return $min;
+    $v = (int)$value;
+    return max($min, min($max, $v));
+  }
+
+  private function clampFloat($value, float $min, float $max): float {
+    if (!is_numeric($value)) return $min;
+    $v = (float)$value;
+    if (is_nan($v) || is_infinite($v)) return $min;
+    return max($min, min($max, round($v, 2)));
   }
 }

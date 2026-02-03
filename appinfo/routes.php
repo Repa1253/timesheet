@@ -21,6 +21,8 @@ return [
 
     ['name' => 'config#getHrNotificationSettings', 'url' => '/api/hr/notifications', 'verb' => 'GET'],
     ['name' => 'config#setHrNotificationSettings', 'url' => '/api/hr/notifications', 'verb' => 'PUT'],
+    ['name' => 'config#getEffectiveRulesSelf', 'url' => '/api/rules/effective', 'verb' => 'GET'],
+    ['name' => 'config#getEffectiveRulesForUser', 'url' => '/api/rules/effective/{userId}', 'verb' => 'GET'],
 
     // REST: Holidays 
     ['name' => 'holiday#getHolidays', 'url' => '/api/holidays', 'verb' => 'GET'],

@@ -38,6 +38,43 @@
     return 'r_' + Math.random().toString(16).slice(2) + "_" + Date.now();
   }
 
+  const ruleDefaults = {
+    breakShortMinutes: 30,
+    breakShortHours: 6,
+    breakLongMinutes: 45,
+    breakLongHours: 9,
+    maxHours: 10,
+  };
+
+  const ruleRanges = {
+    breakShortMinutes: [0, 600],
+    breakShortHours: [0, 24],
+    breakLongMinutes: [0, 600],
+    breakLongHours: [0, 24],
+    maxHours: [0, 24],
+  };
+
+  function clamp(val, min, max, fallback) {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function mergeDefaults(data = {}) {
+    const out = {
+      id: String(data.id || "").trim(),
+      hrGroups: Array.isArray(data.hrGroups) ? data.hrGroups : [],
+      userGroups: Array.isArray(data.userGroups) ? data.userGroups : [],
+    };
+
+    Object.entries(ruleDefaults).forEach(([key, def]) => {
+      const [min, max] = ruleRanges[key];
+      out[key] = clamp(data[key], min, max, def);
+    });
+
+    return out;
+  }
+
   function sanitizeRules(input) {
     const out = [];
     (Array.isArray(input) ? input : []).forEach((r) => {
@@ -57,7 +94,14 @@
         return Array.from(s);
       };
 
-      out.push({ id, hrGroups: clean(hrGroups), userGroups: clean(userGroups) });
+      const merged = mergeDefaults({
+        ...r,
+        id,
+        hrGroups: clean(hrGroups),
+        userGroups: clean(userGroups),
+      });
+
+      out.push(merged);
     });
     return out;
   }
@@ -171,6 +215,8 @@
           .join('');
       };
 
+      const cfg = mergeDefaults(rule);
+
       card.innerHTML = `
         <div class="ts-rule-head">
           <div class="ts-rule-title">${optHtml(t("timesheet", "Group rule"))} ${index + 1}</div>
@@ -188,6 +234,36 @@
             <label>${optHtml(t("timesheet", "Employee groups"))}</label>
             <div class="ts-chips" data-kind="userGroups">${chips(rule.userGroups, "userGroups")}</div>
             <select class="ts-rule-select" data-kind="userGroups">${userOptions}</select>
+          </div>
+        </div>
+
+        <div class="ts-rule-section">
+          <div class="ts-rule-section-title">${optHtml(t("timesheet", "Time rules"))}</div>
+          <div class="ts-rule-grid ts-rule-grid-compact">
+            <div class="ts-rule-col">
+              <label>${optHtml(t("timesheet", "Minimum break (short)"))}</label>
+              <div class="ts-inline">
+                <input type="number" min="0" max="600" step="5" class="ts-rule-input" data-key="breakShortMinutes" value="${cfg.breakShortMinutes}">
+                <span>${optHtml(t("timesheet", "minutes when working more than"))}</span>
+                <input type="number" min="0" max="24" step="0.25" class="ts-rule-input" data-key="breakShortHours" value="${cfg.breakShortHours}">
+                <span>${optHtml(t("timesheet", "hours"))}</span>
+              </div>
+            </div>
+
+            <div class="ts-rule-col">
+              <label>${optHtml(t("timesheet", "Minimum break (long)"))}</label>
+              <div class="ts-inline">
+                <input type="number" min="0" max="600" step="5" class="ts-rule-input" data-key="breakLongMinutes" value="${cfg.breakLongMinutes}">
+                <span>${optHtml(t("timesheet", "minutes when working more than"))}</span>
+                <input type="number" min="0" max="24" step="0.25" class="ts-rule-input" data-key="breakLongHours" value="${cfg.breakLongHours}">
+                <span>${optHtml(t("timesheet", "hours"))}</span>
+              </div>
+            </div>
+
+            <div class="ts-rule-col">
+              <label>${optHtml(t("timesheet", "No work allowed after (hours per day)"))}</label>
+              <input type="number" min="0" max="24" step="0.25" class="ts-rule-input" data-key="maxHours" value="${cfg.maxHours}">
+            </div>
           </div>
         </div>
       `;
@@ -216,7 +292,7 @@
 
   addBtn?.addEventListener('click', async () => {
     const next = sanitizeRules(rules);
-    next.push({ id: newRuleId(), hrGroups: [], userGroups: [] });
+    next.push(mergeDefaults({ id: newRuleId(), hrGroups: [], userGroups: [] }));
     await persistAndRender(next);
   });
 
@@ -279,7 +355,29 @@
     await persistAndRender(rules);
   });
 
-  specialDaysOvertime.addEventListener('change', async (e) => {
+  rulesEl.addEventListener('change', async (e) => {
+    const input = e.target.closest('.ts-rule-input');
+    if (!input) return;
+
+    const card = e.target.closest('.ts-rule');
+    const ruleId = card?.dataset.ruleId;
+    const key = input.dataset.key;
+    if (!ruleId || !key || !ruleRanges[key]) return;
+
+    const [min, max] = ruleRanges[key];
+    const fallback = ruleDefaults[key];
+    const value = clamp(input.value, min, max, fallback);
+    input.value = value;
+
+    mutateRule(ruleId, (r) => {
+      r[key] = value;
+      return r;
+    });
+
+    await persistAndRender(rules);
+  });
+
+  specialDaysOvertime?.addEventListener('change', async (e) => {
     const checked = e.target.checked;
 
     try {
@@ -312,11 +410,11 @@
       });
 
       if (response.ok) {
-        const { check } = await response.json();
-        specialDaysOvertime.checked = check;
-      } else {
-        console.error('Failed to load special days check setting:', response.status);
-      }
+      const { check } = await response.json();
+      if (specialDaysOvertime) specialDaysOvertime.checked = check;
+    } else {
+      console.error('Failed to load special days check setting:', response.status);
+    }
     } catch (error) {
       console.error('Error loading special days check setting:', error);
     }
