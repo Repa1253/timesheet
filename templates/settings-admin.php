@@ -8,7 +8,7 @@
   <h2><?php p($l->t('Timesheet settings')); ?></h2>
 
   <p class="ts-hint">
-    <?php p($l->t('Define access rules: HR groups may access timesheets of the employee groups.')); ?>
+    <?php p($l->t('Define access rules: HR groups may access timesheets of the employee groups. Each employee group can appear in only one rule.')); ?>
   </p>
 
   <div id="timesheet-hr-rules"></div>

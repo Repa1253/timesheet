@@ -18,6 +18,7 @@
 
   const allGroups = readJson('timesheet-all-groups-data');
   let rules = readJson('timesheet-hr-rules-data');
+  let notifiedDuplicateEmployeeGroups = false;
 
   const rulesEl = document.getElementById('timesheet-hr-rules');
   const addBtn = document.getElementById('timesheet-add-hr-rule');
@@ -61,6 +62,34 @@
     return out;
   }
 
+  function enforceUniqueUserGroupsAcrossRules(input) {
+    const rules = Array.isArray(input) ? input : [];
+    const seen = new Set();
+    const removed = [];
+
+    rules.forEach((r) => {
+      const next = [];
+      (Array.isArray(r.userGroups) ? r.userGroups : []).forEach((g) => {
+        if (seen.has(g)) {
+          removed.push(g);
+          return;
+        }
+        seen.add(g);
+        next.push(g);
+      });
+      r.userGroups = next;
+    });
+
+    return { rules, removed };
+  }
+
+  function isUserGroupUsedElsewhere(input, ruleId, group) {
+    return (Array.isArray(input) ? input : []).some((r) => {
+      if (r.id === ruleId) return false;
+      return Array.isArray(r.userGroups) && r.userGroups.includes(group);
+    });
+  }
+
   async function saveRules(nextRules) {
     const url = OC.generateUrl('/apps/timesheet/settings/hr_access_rules');
     const formData = new FormData();
@@ -88,8 +117,15 @@
   }
 
   function render() {
-    rules = sanitizeRules(rules);
+    const sanitized = sanitizeRules(rules);
+    const normalized = enforceUniqueUserGroupsAcrossRules(sanitized);
+    rules = normalized.rules;
     rulesEl.innerHTML = '';
+
+    if (normalized.removed.length && !notifiedDuplicateEmployeeGroups) {
+      notifiedDuplicateEmployeeGroups = true;
+      notify(t('timesheet', 'Some Employee groups were assigned to multiple rules. Duplicates were removed.'));
+    }
 
     if (rules.length === 0) {
       const div = document.createElement('div');
@@ -99,13 +135,28 @@
       return;
     }
 
+    const usedUserGroups = new Set();
+    rules.forEach((r) => {
+      (Array.isArray(r.userGroups) ? r.userGroups : []).forEach((g) => usedUserGroups.add(g));
+    });
+
     rules.forEach((rule, index) => {
       const card = document.createElement('div');
       card.className = 'ts-rule';
       card.dataset.ruleId = rule.id;
 
-      const groupOptions = ['<option value="">' + optHtml(t('timesheet', 'Add group...')) + '</option>']
+      const hrOptions = ['<option value="">' + optHtml(t('timesheet', 'Add group...')) + '</option>']
         .concat(allGroups.map((g) => `<option value="${optHtml(g)}">${optHtml(g)}</option>`))
+        .join('');
+
+      const ruleUserGroups = new Set(Array.isArray(rule.userGroups) ? rule.userGroups : []);
+      const userOptions = ['<option value="">' + optHtml(t('timesheet', 'Add group...')) + '</option>']
+        .concat(
+          allGroups.map((g) => {
+            const disabled = usedUserGroups.has(g) && !ruleUserGroups.has(g);
+            return `<option value="${optHtml(g)}"${disabled ? ' disabled' : ''}>${optHtml(g)}</option>`;
+          })
+        )
         .join('');
 
       const chips = (arr, kind) => {
@@ -122,7 +173,7 @@
 
       card.innerHTML = `
         <div class="ts-rule-head">
-          <div class="ts-rule-title">${optHtml(t("timesheet", "Rule"))} ${index + 1}</div>
+          <div class="ts-rule-title">${optHtml(t("timesheet", "Group rule"))} ${index + 1}</div>
           <a href="#" class="ts-rule-delete" title="${optHtml(t("timesheet", "Delete rule"))}">×</a>
         </div>
 
@@ -130,13 +181,13 @@
           <div class="ts-rule-col">
             <label>${optHtml(t("timesheet", "HR groups"))}</label>
             <div class="ts-chips" data-kind="hrGroups">${chips(rule.hrGroups, "hrGroups")}</div>
-            <select class="ts-rule-select" data-kind="hrGroups">${groupOptions}</select>
+            <select class="ts-rule-select" data-kind="hrGroups">${hrOptions}</select>
           </div>
 
           <div class="ts-rule-col">
             <label>${optHtml(t("timesheet", "Employee groups"))}</label>
             <div class="ts-chips" data-kind="userGroups">${chips(rule.userGroups, "userGroups")}</div>
-            <select class="ts-rule-select" data-kind="userGroups">${groupOptions}</select>
+            <select class="ts-rule-select" data-kind="userGroups">${userOptions}</select>
           </div>
         </div>
       `;
@@ -152,7 +203,9 @@
 
   async function persistAndRender(nextRules) {
     try {
-      rules = await saveRules(nextRules);
+      const sanitized = sanitizeRules(nextRules);
+      const normalized = enforceUniqueUserGroupsAcrossRules(sanitized);
+      rules = await saveRules(normalized.rules);
       render();
     } catch (error) {
       console.error('Failed to save HR access rules:', error);
@@ -210,6 +263,11 @@
     
     sel.value = '';
     if (!ruleId || !kind || !group) return;
+
+    if (kind === 'userGroups' && isUserGroupUsedElsewhere(rules, ruleId, group)) {
+      notify(t('timesheet', 'Group already assigned to another rule.'));
+      return;
+    }
 
     mutateRule(ruleId, (r) => {
       const arr = Array.isArray(r[kind]) ? r[kind] : [];
