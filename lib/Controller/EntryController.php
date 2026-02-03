@@ -99,7 +99,14 @@ class EntryController extends Controller {
       'comment' => $comment,
     ];
 
-    $entry = $this->service->create($payload, $targetUid);
+    try {
+      $entry = $this->service->create($payload, $targetUid);
+    } catch (\DomainException $e) {
+      if ($e->getCode() === 409) {
+        return new DataResponse(['error' => 'Entry already exists'], 409);
+      }
+      throw $e;
+    }
     return new DataResponse($entry);
   }
 
@@ -126,8 +133,7 @@ class EntryController extends Controller {
       $data['endMin'] = null;
       $data['breakMinutes'] = 0;
       $data['comment'] = $commentTrim;
-      $entry = $this->service->update($id, $data, $this->hrService->isHr());
-      return new DataResponse($entry);
+      return $this->updateEntryWithConflictHandling($id, $data);
     }
 
     $startMin = self::hmToMinNullable($start);
@@ -140,8 +146,7 @@ class EntryController extends Controller {
       $data['endMin'] = null;
       $data['breakMinutes'] = 0;
       $data['comment'] = $commentTrim;
-      $entry = $this->service->update($id, $data, $this->hrService->isHr());
-      return new DataResponse($entry);
+      return $this->updateEntryWithConflictHandling($id, $data);
     }
 
     if ($start !== null) {
@@ -155,7 +160,18 @@ class EntryController extends Controller {
     if ($breakMinutes !== null) $data['breakMinutes'] = $breakMinutes;
     if ($comment !== null) $data['comment'] = $comment;
 
-    $entry = $this->service->update($id, $data, $this->hrService->isHr());
+    return $this->updateEntryWithConflictHandling($id, $data);
+  }
+
+  private function updateEntryWithConflictHandling(int $id, array $data): DataResponse {
+    try {
+      $entry = $this->service->update($id, $data, $this->hrService->isHr());
+    } catch (\DomainException $e) {
+      if ($e->getCode() === 409) {
+        return new DataResponse(['error' => 'Entry already exists'], 409);
+      }
+      throw $e;
+    }
     return new DataResponse($entry);
   }
 
