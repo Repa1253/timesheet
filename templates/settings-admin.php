@@ -8,7 +8,7 @@
   <h2><?php p($l->t('Timesheet settings')); ?></h2>
 
   <p class="ts-hint">
-    <?php p($l->t('Define access rules: HR groups may access timesheets of the employee groups. Set time rules for those employee groups in each rule. Each employee group can appear in only one rule.')); ?>
+    <?php p($l->t('Define access rules: HR groups may access timesheets of the employee groups. Set time rules for those employee groups in each rule. Use priorities for when users are in multiple groups.')); ?>
   </p>
 
   <?php if (empty($allGroups)) : ?>
@@ -54,6 +54,9 @@
     .ts-rule { border: 1px solid var(--color-border); border-radius: 10px; padding: 12px; background: var(--color-main-background); }
     .ts-rule-head { display:flex; align-items:center; justify-content:space-between; gap: 8px; margin-bottom: 8px; }
     .ts-rule-title { font-weight: 700; }
+    .ts-rule-head-actions { display:flex; align-items:center; gap: 10px; }
+    .ts-rule-priority { display:flex; align-items:center; gap: 6px; font-weight: 600; }
+    .ts-rule-priority input { width: 90px; }
     .ts-rule-delete { text-decoration:none; font-weight: 800; opacity:.7; }
     .ts-rule-delete:hover { opacity: 1; }
     .ts-rule-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }

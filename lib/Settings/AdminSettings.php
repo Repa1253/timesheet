@@ -11,6 +11,7 @@ use OCP\IGroupManager;
 class AdminSettings implements ISettings {
 
   private const DEFAULT_RULE_SETTINGS = [
+    'priority' => 1,
     'breakShortMinutes' => 30,
     'breakShortHours' => 6,
     'breakLongMinutes' => 45,
@@ -80,6 +81,7 @@ class AdminSettings implements ISettings {
     $d = self::DEFAULT_RULE_SETTINGS;
 
     return [
+      'priority'               => $this->clampInt($item['priority']               ?? $d['priority'],          0, 9999),
       'breakShortMinutes'      => $this->clampInt($item['breakShortMinutes']      ?? $d['breakShortMinutes'], 0, 600),
       'breakShortHours'        => $this->clampFloat($item['breakShortHours']      ?? $d['breakShortHours'],   0, 24),
       'breakLongMinutes'       => $this->clampInt($item['breakLongMinutes']       ?? $d['breakLongMinutes'],  0, 600),

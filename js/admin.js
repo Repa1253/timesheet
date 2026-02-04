@@ -39,6 +39,7 @@
   }
 
   const ruleDefaults = {
+    priority: 1,
     breakShortMinutes: 30,
     breakShortHours: 6,
     breakLongMinutes: 45,
@@ -47,6 +48,7 @@
   };
 
   const ruleRanges = {
+    priority: [0, 9999],
     breakShortMinutes: [0, 600],
     breakShortHours: [0, 24],
     breakLongMinutes: [0, 600],
@@ -73,6 +75,14 @@
     });
 
     return out;
+  }
+
+  function nextPriorityValue(inputRules) {
+    const values = (Array.isArray(inputRules) ? inputRules : [])
+      .map((r) => Number(r?.priority))
+      .filter((v) => Number.isFinite(v));
+    if (!values.length) return ruleDefaults.priority;
+    return Math.max(...values) + 1;
   }
 
   function sanitizeRules(input) {
@@ -220,7 +230,13 @@
       card.innerHTML = `
         <div class="ts-rule-head">
           <div class="ts-rule-title">${optHtml(t("timesheet", "Group rule"))} ${index + 1}</div>
-          <a href="#" class="ts-rule-delete" title="${optHtml(t("timesheet", "Delete rule"))}">×</a>
+          <div class="ts-rule-head-actions">
+            <label class="ts-rule-priority">
+              <span>${optHtml(t("timesheet", "Priority"))}</span>
+              <input type="number" min="0" max="9999" step="1" class="ts-rule-input ts-rule-priority-input" data-key="priority" value="${cfg.priority}">
+            </label>
+            <a href="#" class="ts-rule-delete" title="${optHtml(t("timesheet", "Delete rule"))}">×</a>
+          </div>
         </div>
 
         <div class="ts-rule-grid">
@@ -292,7 +308,8 @@
 
   addBtn?.addEventListener('click', async () => {
     const next = sanitizeRules(rules);
-    next.push(mergeDefaults({ id: newRuleId(), hrGroups: [], userGroups: [] }));
+    const priority = nextPriorityValue(next);
+    next.push(mergeDefaults({ id: newRuleId(), hrGroups: [], userGroups: [], priority }));
     await persistAndRender(next);
   });
 

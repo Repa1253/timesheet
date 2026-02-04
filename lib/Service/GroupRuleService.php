@@ -15,6 +15,9 @@ class GroupRuleService {
     'breakLongHours' => 9,
     'maxHours' => 10,
   ];
+  private const PRIORITY_DEFAULT = 1;
+  private const PRIORITY_MIN = 0;
+  private const PRIORITY_MAX = 9999;
 
   public function __construct(
     private IAppConfig $appConfig,
@@ -53,18 +56,29 @@ class GroupRuleService {
     $rules = $this->loadRules();
     if (!$rules) return self::DEFAULTS;
 
+    $bestRule = null;
+    $bestPriority = null;
+
     foreach ($rules as $rule) {
       $ruleGroups = $rule['userGroups'] ?? [];
       if (!$ruleGroups || !array_intersect($ruleGroups, $userGroups)) continue;
 
-      return $this->extractThresholds($rule);
+      $priority = $this->getRulePriority($rule);
+      if ($bestRule === null || $priority < $bestPriority) {
+        $bestRule = $rule;
+        $bestPriority = $priority;
+      }
+    }
+
+    if ($bestRule !== null) {
+      return $this->extractThresholds($bestRule);
     }
 
     return self::DEFAULTS;
   }
 
   /**
-   * @return array<int, array{id:string,hrGroups:string[],userGroups:string[]}>
+   * @return array<int, array{id:string,hrGroups:string[],userGroups:string[],priority:int}>
    */
   private function loadRules(): array {
     $raw = (string)$this->appConfig->getAppValueString('hr_access_rules');
@@ -114,6 +128,7 @@ class GroupRuleService {
     $d = self::DEFAULTS;
 
     return [
+      'priority'               => $this->clampInt($item['priority']               ?? self::PRIORITY_DEFAULT, self::PRIORITY_MIN, self::PRIORITY_MAX),
       'breakShortMinutes'      => $this->clampInt($item['breakShortMinutes']      ?? $d['breakShortMinutes'], 0, 600),
       'breakShortHours'        => $this->clampFloat($item['breakShortHours']      ?? $d['breakShortHours'],   0, 24),
       'breakLongMinutes'       => $this->clampInt($item['breakLongMinutes']       ?? $d['breakLongMinutes'],  0, 600),
@@ -132,6 +147,13 @@ class GroupRuleService {
       $out[$key] = array_key_exists($key, $rule) ? $rule[$key] : $fallback;
     }
     return $out;
+  }
+
+  /**
+   * @param array<string, mixed> $rule
+   */
+  private function getRulePriority(array $rule): int {
+    return $this->clampInt($rule['priority'] ?? self::PRIORITY_DEFAULT, self::PRIORITY_MIN, self::PRIORITY_MAX);
   }
 
   /**
