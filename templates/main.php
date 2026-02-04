@@ -80,8 +80,13 @@
   <!-- HR-Übersicht -->
   <?php if ($_['isHR']): ?>
     <div id="tab-hr" class="ts-tabview">
-
       <div class="ts-hr-row">
+        <div id="hr-infobox-section" class="ts-hr-section ts-infobox">
+          <p class="ts-infobox-text">
+            <?php p($l->t('If you would like to request changes to break durations, permitted daily hours or timesheets of other employees, please contact your Nextcloud admin.')) ?>
+          </p>
+        </div>
+
         <!-- Mitarbeitende -->
         <div id="hr-userlist-section" class="ts-hr-section">
           <h4><?php p($l->t('Employees')) ?></h4>

@@ -224,6 +224,15 @@
   display: block;
 }
 
+.ts-infobox {
+  padding: 10px 12px;
+  border-left: 4px solid var(--color-primary, #0082c9);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-background-dark, #0082c9) 8%, var(--color-main-background, #fff));
+  line-height: 1.4;
+  width: 464px;
+}
+
 .hr-user-header-bar {
   display: flex;
   align-items: center;
@@ -337,12 +346,14 @@
   gap: 16px;
   align-items: start;
   justify-content: start;
-  grid-template-columns: auto auto auto auto;
+  grid-template-columns: auto auto auto;
   grid-template-areas: 
+    "users stats warnings"
     "users stats notifications"
-    "users stats warnings";
+    "users stats infobox";
 }
 
+#hr-infobox-section { grid-area: infobox; }
 #hr-userlist-section { grid-area: users; justify-self: start; }
 #hr-stats-section { grid-area: stats; justify-self: start; }
 #hr-notifications-section { grid-area: notifications; justify-self: start; }
@@ -354,7 +365,8 @@
     grid-template-areas:
       "users stats"
       "users warnings"
-      "users notifications";
+      "users notifications"
+      "users infobox";
   }
 }
 
@@ -362,8 +374,8 @@
   .ts-hr-row {
     grid-template-columns: auto auto;
     grid-template-areas:
-      "stats stats"
-      "notifications warnings"
+      "stats infobox"
+      "warnings notifications"
       "users users";
   }
 }
@@ -372,10 +384,11 @@
   .ts-hr-row {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "stats"
-      "warnings"
-      "notifications"
-      "users";
+    "stats"
+    "warnings"
+    "notifications"
+    "users"
+    "infobox";
   }
 }
 
