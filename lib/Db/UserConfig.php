@@ -31,6 +31,15 @@ use OCP\AppFramework\Db\Entity;
  * 
  * @method int|null getMailNegativeThresholdMin()
  * @method void setMailNegativeThresholdMin(?int $minutes)
+ *
+ * @method int|null getWarnNoEntryDays()
+ * @method void setWarnNoEntryDays(?int $days)
+ *
+ * @method int|null getWarnOvertimeThresholdMin()
+ * @method void setWarnOvertimeThresholdMin(?int $minutes)
+ *
+ * @method int|null getWarnNegativeThresholdMin()
+ * @method void setWarnNegativeThresholdMin(?int $minutes)
  */
 class UserConfig extends Entity {
   /** @var string */
@@ -51,6 +60,12 @@ class UserConfig extends Entity {
   protected $mailNegativeEnabled;
   /** @var int|null */
   protected $mailNegativeThresholdMin;
+  /** @var int|null */
+  protected $warnNoEntryDays;
+  /** @var int|null */
+  protected $warnOvertimeThresholdMin;
+  /** @var int|null */
+  protected $warnNegativeThresholdMin;
 
   public function __construct() {
     $this->addType('id', 'integer');
@@ -62,5 +77,8 @@ class UserConfig extends Entity {
     $this->addType('mailOvertimeThresholdMin', 'integer');
     $this->addType('mailNegativeEnabled', 'boolean');
     $this->addType('mailNegativeThresholdMin', 'integer');
+    $this->addType('warnNoEntryDays', 'integer');
+    $this->addType('warnOvertimeThresholdMin', 'integer');
+    $this->addType('warnNegativeThresholdMin', 'integer');
   }
 }

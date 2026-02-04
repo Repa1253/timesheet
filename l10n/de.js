@@ -33,6 +33,7 @@ OC.L10N.register(
     "Warning": "Warnung",
     "timesheet": "Stundenzettel",
     "Copied to clipboard": "In die Zwischenablage kopiert",
+    "No entry for more than": "Kein Eintrag für mehr als",
 
     // admin.js translations
     "No rules yet. Add one to restrict HR access based on groups.": "Noch keine Regeln. Fügen Sie eine hinzu, um den HR-Zugriff basierend auf Gruppen einzuschränken.",

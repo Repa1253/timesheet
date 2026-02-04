@@ -56,6 +56,8 @@
     "Overtime warning": "Überstunden-Warnung",
     "hours": "Stunden",
     "Negative overtime warning": "Minusstunden-Warnung",
+    "When enabled, receive emails about warnings in the user list.": "Wenn aktiviert, erhalte E-Mails über Warnungen in der Benutzerliste.",
+    "Warnings are shown when employees reach the threshold.": "Warnungen werden angezeigt, wenn Mitarbeitende den Schwellenwert erreichen.",
 
     "_comment": "EntryController.php translations",
     "Employee": "Mitarbeiter",

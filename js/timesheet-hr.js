@@ -10,6 +10,33 @@
   TS.hr = TS.hr || {};
   const HR = TS.hr;
 
+  function getWarningThresholds() {
+    const warn = S.hrWarningThresholds || {};
+    const noEntryDays = Number.isFinite(warn.noEntryDays)
+      ? warn.noEntryDays
+      : 14;
+    const overtimeThresholdMinutes = Number.isFinite(warn.overtimeThresholdMinutes)
+      ? warn.overtimeThresholdMinutes
+      : 600;
+    const negativeOvertimeThresholdMinutes = Number.isFinite(warn.negativeOvertimeThresholdMinutes)
+      ? warn.negativeOvertimeThresholdMinutes
+      : 600;
+
+    return {
+      noEntryDays: Math.max(1, Math.min(365, noEntryDays)),
+      overtimeThresholdMinutes: Math.max(0, overtimeThresholdMinutes),
+      negativeOvertimeThresholdMinutes: Math.max(0, negativeOvertimeThresholdMinutes),
+    };
+  }
+
+  async function ensureWarningThresholds() {
+    if (S.hrWarningThresholds) return getWarningThresholds();
+    if (TS.config?.loadHrWarningThresholds) {
+      await TS.config.loadHrWarningThresholds();
+    }
+    return getWarningThresholds();
+  }
+
   // Fetch the last entry date for a user
   async function fetchLastEntryDate(userId) {
     const today = new Date();
@@ -87,6 +114,7 @@
     dom.userListEl.innerHTML = '';
 
     try {
+      const thresholds = await ensureWarningThresholds();
       const users = await TS.api('/api/hr/users');
       const frag = document.createDocumentFragment();
       
@@ -142,14 +170,19 @@
               diffDays = Math.floor((Date.parse(todayStr) - Date.parse(lastDateStr)) / (1000 * 60 * 60 * 24));
               if (diffDays < 0) diffDays = 0;
               if (daysCell) daysCell.textContent = String(diffDays);
-              if (diffDays >= 14) errors.push(t(S.appName, 'No entry for more than 14 days'));
+              if (diffDays >= thresholds.noEntryDays) {
+                errors.push(`${t(S.appName, 'No entry for more than')} ${thresholds.noEntryDays} ${t(S.appName, 'days')}`);
+              }
             } else {
-              errors.push(t(S.appName, 'No entry for more than 14 days'));
+              errors.push(`${t(S.appName, 'No entry for more than')} ${thresholds.noEntryDays} ${t(S.appName, 'days')}`);
             }
 
             if (typeof overtimeMinutes === 'number') {
-              if (overtimeMinutes > 600) errors.push(t(S.appName, 'Too much overtime'));
-              else if (overtimeMinutes < -600) errors.push(t(S.appName, 'Too many negative hours'));
+              if (overtimeMinutes >= thresholds.overtimeThresholdMinutes) {
+                errors.push(t(S.appName, 'Too much overtime'));
+              } else if (overtimeMinutes <= -thresholds.negativeOvertimeThresholdMinutes) {
+                errors.push(t(S.appName, 'Too many negative hours'));
+              }
             }
 
             if (errorCell) errorCell.textContent = errors.join(', ');

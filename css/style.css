@@ -113,7 +113,9 @@
 #hr-user-table input:focus,
 #hr-user-table textarea:focus,
 #hr-notifications-section input:hover,
-#hr-notifications-section input:focus {
+#hr-notifications-section input:focus,
+#hr-warning-thresholds-section input:hover,
+#hr-warning-thresholds-section input:focus {
   box-shadow: inset 0 0 0 2px var(--color-primary, #0082c9);
 }
 
@@ -165,7 +167,9 @@
 #hr-user-table input[type="number"],
 #hr-user-table input[type="text"],
 #hr-notifications-section input[type="number"],
-#hr-notifications-section input[type="text"] {
+#hr-notifications-section input[type="text"],
+#hr-warning-thresholds-section input[type="number"],
+#hr-warning-thresholds-section input[type="text"] {
   text-align: center;
 }
 
@@ -333,37 +337,43 @@
   gap: 16px;
   align-items: start;
   justify-content: start;
-  grid-template-columns: auto auto auto;
-  grid-template-areas: "users stats notifications";
+  grid-template-columns: auto auto auto auto;
+  grid-template-areas: 
+    "users stats notifications"
+    "users stats warnings";
 }
 
 #hr-userlist-section { grid-area: users; justify-self: start; }
 #hr-stats-section { grid-area: stats; justify-self: start; }
-#hr-notifications-section { grid-area: notifications; justify-self: start; } 
+#hr-notifications-section { grid-area: notifications; justify-self: start; }
+#hr-warning-thresholds-section { grid-area: warnings; justify-self: start; }
 
-@media (max-width: 1750px) {
+@media (max-width: 1800px) {
   .ts-hr-row {
     grid-template-columns: auto auto;
     grid-template-areas:
       "users stats"
+      "users warnings"
       "users notifications";
   }
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1330px) {
   .ts-hr-row {
     grid-template-columns: auto auto;
     grid-template-areas:
-      "stats notifications"
+      "stats stats"
+      "notifications warnings"
       "users users";
   }
 }
 
-@media (max-width: 925px) {
+@media (max-width: 1050px) {
   .ts-hr-row {
     grid-template-columns: 1fr;
     grid-template-areas:
       "stats"
+      "warnings"
       "notifications"
       "users";
   }
@@ -371,7 +381,8 @@
 
 #hr-userlist-section,
 #hr-stats-section,
-#hr-notifications-section {
+#hr-notifications-section,
+#hr-warning-thresholds-section {
   background: var(--color-background-dark, #f6f8fa);
   border: 1px solid var(--color-border, #d0d7de);
   border-radius: 6px;
@@ -379,7 +390,8 @@
 
 #hr-userlist-section h4,
 #hr-stats-section h4,
-#hr-notifications-section h4 {
+#hr-notifications-section h4,
+#hr-warning-thresholds-section h4 {
   margin: 0 5px 8px;
   font-weight: 700;
 }
@@ -387,7 +399,9 @@
 #hr-stats-section .hr-stats-table th,
 #hr-stats-section .hr-stats-table td,
 #hr-notifications-section .hr-notifications-table th,
-#hr-notifications-section .hr-notifications-table td {
+#hr-notifications-section .hr-notifications-table td,
+#hr-warning-thresholds-section .hr-warning-thresholds-table th,
+#hr-warning-thresholds-section .hr-warning-thresholds-table td {
   border: 1px solid var(--color-border, #e1e4e8);
   background: var(--color-main-background, #fff);
   padding: 4px 8px;
@@ -395,8 +409,17 @@
 }
 
 #hr-notifications-section .hr-notifications-table th:nth-child(2),
-#hr-notifications-section .hr-notifications-table td:nth-child(2) {
+#hr-notifications-section .hr-notifications-table td:nth-child(2),
+#hr-warning-thresholds-section .hr-warning-thresholds-table th:nth-child(1),
+#hr-warning-thresholds-section .hr-warning-thresholds-table td:nth-child(1) {
   text-align: left;
+}
+
+#hr-notifications-section .hr-hint-row td,
+#hr-warning-thresholds-section .hr-hint-row td {
+  text-align: left;
+  font-style: italic;
+  color: var(--color-text-maxcontrast, #666);
 }
 
 /** timesheet-export.js */
@@ -433,6 +456,17 @@
 }
 
 #hr-notifications-section .hr-notifications-table td:nth-child(3) span {
+  display: inline-block;
+  width: 4em;
+  text-align: left;
+}
+
+#hr-warning-thresholds-section .hr-warning-thresholds-table td:nth-child(2) input[type="number"],
+#hr-warning-thresholds-section .hr-warning-thresholds-table td:nth-child(2) input[type="time"] {
+  width: 5.0em;
+}
+
+#hr-warning-thresholds-section .hr-warning-thresholds-table td:nth-child(2) span {
   display: inline-block;
   width: 4em;
   text-align: left;

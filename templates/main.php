@@ -173,6 +173,50 @@
                   <span><?php p($l->t('hours')) ?></span>
                 </td>
               </tr>
+              <tr class="hr-hint-row">
+                <td colspan="3"><?php p($l->t('When enabled, receive emails about warnings in the user list.')) ?></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="hr-warning-thresholds-section" class="ts-hr-section">
+          <h4><?php p($l->t('Warnings')) ?></h4>
+
+          <table class="grid hr-warning-thresholds-table">
+            <thead>
+              <tr>
+                <th><?php p($l->t('Warning')) ?></th>
+                <th><?php p($l->t('Threshold')) ?></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><?php p($l->t('No entry reminder')) ?></td>
+                <td>
+                  <input type="number" id="hr-warn-no-entry-days" min="1" max="365" step="1" value="14">
+                  <span><?php p($l->t('days')) ?></span>
+                </td>
+              </tr>
+
+              <tr>
+                <td><?php p($l->t('Overtime warning')) ?></td>
+                <td>
+                  <input type="time" id="hr-warn-overtime-threshold" value="10:00" step="60">
+                  <span><?php p($l->t('hours')) ?></span>
+                </td>
+              </tr>
+
+              <tr>
+                <td><?php p($l->t('Negative overtime warning')) ?></td>
+                <td>
+                  <input type="time" id="hr-warn-negative-threshold" value="10:00" step="60">
+                  <span><?php p($l->t('hours')) ?></span>
+                </td>
+              </tr>
+              <tr class="hr-hint-row">
+                <td colspan="2"><?php p($l->t('Warnings are shown when employees reach the threshold.')) ?></td>
+              </tr>
             </tbody>
           </table>
         </div>

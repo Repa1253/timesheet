@@ -28,6 +28,10 @@ class ConfigController extends Controller {
   private const DEFAULT_NEGATIVE_OVERTIME_ENABLED = false;
   private const DEFAULT_NEGATIVE_OVERTIME_THRESHOLD = 600; // 10 hours
 
+  private const DEFAULT_WARN_NO_ENTRY_DAYS = self::DEFAULT_NO_ENTRY_DAYS;
+  private const DEFAULT_WARN_OVERTIME_THRESHOLD = self::DEFAULT_OVERTIME_THRESHOLD;
+  private const DEFAULT_WARN_NEGATIVE_THRESHOLD = self::DEFAULT_NEGATIVE_OVERTIME_THRESHOLD;
+
   private IUserSession $userSession;
   private IDBConnection $db;
 
@@ -227,6 +231,132 @@ class ConfigController extends Controller {
       'overtimeEnabled' => $overtimeEnabled,
       'overtimeThresholdMinutes' => $overtimeThresholdMinutes,
       'negativeOvertimeEnabled' => $negativeOvertimeEnabled,
+      'negativeOvertimeThresholdMinutes' => $negativeOvertimeThresholdMinutes,
+    ], Http::STATUS_OK);
+  }
+
+  /**
+   * @NoAdminRequired
+   * @NoCSRFRequired
+   * @Route("/api/hr/warnings", methods={"GET"})
+   *
+   * Returns warning thresholds for the logged-in HR user
+   */
+  public function getHrWarningThresholds(): DataResponse {
+    $currentUser = $this->assertHrUser();
+
+    $defaults = [
+      'noEntryDays' => self::DEFAULT_WARN_NO_ENTRY_DAYS,
+      'overtimeThresholdMinutes' => self::DEFAULT_WARN_OVERTIME_THRESHOLD,
+      'negativeOvertimeThresholdMinutes' => self::DEFAULT_WARN_NEGATIVE_THRESHOLD,
+    ];
+
+    $qb = $this->db->getQueryBuilder();
+    $qb->select(
+        'warn_no_entry_days',
+        'warn_overtime_threshold_min',
+        'warn_negative_threshold_min'
+      )
+      ->from('ts_user_config')
+      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($currentUser)));
+
+    $row = $qb->executeQuery()->fetch();
+    if ($row === false) {
+      return new DataResponse($defaults, Http::STATUS_OK);
+    }
+
+    $out = $defaults;
+
+    if (array_key_exists('warn_no_entry_days', $row) && $row['warn_no_entry_days'] !== null) {
+      $out['noEntryDays'] = (int)$row['warn_no_entry_days'];
+    }
+
+    if (array_key_exists('warn_overtime_threshold_min', $row) && $row['warn_overtime_threshold_min'] !== null) {
+      $out['overtimeThresholdMinutes'] = (int)$row['warn_overtime_threshold_min'];
+    }
+
+    if (array_key_exists('warn_negative_threshold_min', $row) && $row['warn_negative_threshold_min'] !== null) {
+      $out['negativeOvertimeThresholdMinutes'] = (int)$row['warn_negative_threshold_min'];
+    }
+
+    $out['noEntryDays'] = max(1, min(365, (int)$out['noEntryDays']));
+    $out['overtimeThresholdMinutes']         = max(0, (int)$out['overtimeThresholdMinutes']);
+    $out['negativeOvertimeThresholdMinutes'] = max(0, (int)$out['negativeOvertimeThresholdMinutes']);
+
+    return new DataResponse($out, Http::STATUS_OK);
+  }
+
+  /**
+   * @NoAdminRequired
+   * @NoCSRFRequired
+   * @Route("/api/hr/warnings", methods={"PUT"})
+   *
+   * Stores warning thresholds for the logged-in HR user
+   *
+   * Expects JSON body with fields:
+   * {
+   *   "noEntryDays": 14,
+   *   "overtimeThresholdMinutes": 600,
+   *   "negativeOvertimeThresholdMinutes": 600
+   * }
+   */
+  public function setHrWarningThresholds(): DataResponse {
+    $currentUser = $this->assertHrUser();
+
+    $payload = $this->request->getParams();
+    if (!is_array($payload)) $payload = [];
+
+    $noEntryDays = array_key_exists('noEntryDays', $payload)
+      ? (int)$payload['noEntryDays']
+      : self::DEFAULT_WARN_NO_ENTRY_DAYS;
+
+    $overtimeThresholdMinutes = array_key_exists('overtimeThresholdMinutes', $payload)
+      ? (int)$payload['overtimeThresholdMinutes']
+      : self::DEFAULT_WARN_OVERTIME_THRESHOLD;
+
+    $negativeOvertimeThresholdMinutes = array_key_exists('negativeOvertimeThresholdMinutes', $payload)
+      ? (int)$payload['negativeOvertimeThresholdMinutes']
+      : self::DEFAULT_WARN_NEGATIVE_THRESHOLD;
+
+    // Clamp
+    $noEntryDays = max(1, min(365, $noEntryDays));
+    $overtimeThresholdMinutes = max(0, $overtimeThresholdMinutes);
+    $negativeOvertimeThresholdMinutes = max(0, $negativeOvertimeThresholdMinutes);
+
+    $qb = $this->db->getQueryBuilder();
+    $qb->update('ts_user_config')
+      ->set('warn_no_entry_days', $qb->createNamedParameter($noEntryDays))
+      ->set('warn_overtime_threshold_min', $qb->createNamedParameter($overtimeThresholdMinutes))
+      ->set('warn_negative_threshold_min', $qb->createNamedParameter($negativeOvertimeThresholdMinutes))
+      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($currentUser)));
+
+    $affectedRows = $qb->executeStatement();
+
+    if ($affectedRows === 0) {
+      $qbInsert = $this->db->getQueryBuilder();
+      $qbInsert->insert('ts_user_config')
+        ->values([
+          'user_id'      => $qbInsert->createNamedParameter($currentUser),
+          'work_minutes' => $qbInsert->createNamedParameter(self::DEFAULT_WORK_MINUTES),
+          'state'        => $qbInsert->createNamedParameter(null, \PDO::PARAM_NULL),
+
+          'mail_no_entry_enabled' => $qbInsert->createNamedParameter(self::DEFAULT_NO_ENTRY_ENABLED ? 1 : 0),
+          'mail_no_entry_days' => $qbInsert->createNamedParameter(self::DEFAULT_NO_ENTRY_DAYS),
+          'mail_overtime_enabled' => $qbInsert->createNamedParameter(self::DEFAULT_OVERTIME_ENABLED ? 1 : 0),
+          'mail_overtime_threshold_min' => $qbInsert->createNamedParameter(self::DEFAULT_OVERTIME_THRESHOLD),
+          'mail_negative_enabled' => $qbInsert->createNamedParameter(self::DEFAULT_NEGATIVE_OVERTIME_ENABLED ? 1 : 0),
+          'mail_negative_threshold_min' => $qbInsert->createNamedParameter(self::DEFAULT_NEGATIVE_OVERTIME_THRESHOLD),
+
+          'warn_no_entry_days' => $qbInsert->createNamedParameter($noEntryDays),
+          'warn_overtime_threshold_min' => $qbInsert->createNamedParameter($overtimeThresholdMinutes),
+          'warn_negative_threshold_min' => $qbInsert->createNamedParameter($negativeOvertimeThresholdMinutes),
+        ]);
+      $qbInsert->executeStatement();
+    }
+
+    return new DataResponse([
+      'noEntryDays' => $noEntryDays,
+      'overtimeThresholdMinutes' => $overtimeThresholdMinutes,
       'negativeOvertimeThresholdMinutes' => $negativeOvertimeThresholdMinutes,
     ], Http::STATUS_OK);
   }

@@ -85,6 +85,11 @@
     this.hrMailNegativeThreshold = document.getElementById('hr-mail-negative-threshold');
     this.hrNotificationsSection  = document.getElementById('hr-notifications-section');
 
+    this.hrWarnNoEntryDays       = document.getElementById('hr-warn-no-entry-days');
+    this.hrWarnOvertimeThreshold = document.getElementById('hr-warn-overtime-threshold');
+    this.hrWarnNegativeThreshold = document.getElementById('hr-warn-negative-threshold');
+    this.hrWarningThresholdsSection = document.getElementById('hr-warning-thresholds-section');
+
     return this;
   }
 
