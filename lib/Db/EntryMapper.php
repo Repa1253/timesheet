@@ -136,6 +136,87 @@ class EntryMapper extends QBMapper {
     ];
   }
 
+  /**
+   * @param string[] $userIds
+   * @return array<string, array{from:string,to:string,totalMinutes:int,totalWorkdays:int}>
+   */
+  public function calculateOvertimeAggregatesForUsers(array $userIds, bool $excludeSpecialDays): array {
+    if ($userIds === []) {
+      return [];
+    }
+
+    $qb = $this->db->getQueryBuilder();
+
+    $deltaExpr = '((CASE WHEN end_min < start_min THEN end_min + 1440 ELSE end_min END) - start_min - COALESCE(break_minutes, 0))';
+    $totalMinutesExpr  = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 ELSE CASE WHEN ' . $deltaExpr . ' < 0 THEN 0 ELSE ' . $deltaExpr . ' END END)';
+    $totalWorkdaysExpr = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 ELSE 1 END)';
+
+    if ($excludeSpecialDays) {
+      $totalWorkdaysExpr = 'SUM(CASE WHEN start_min IS NULL OR end_min IS NULL THEN 0 WHEN WEEKDAY(`work_date`) >= 5 THEN 0 ELSE 1 END)';
+    }
+
+    $qb->select('user_id')
+      ->selectAlias($qb->createFunction('MIN(`work_date`)'), 'min_date')
+      ->selectAlias($qb->createFunction('MAX(`work_date`)'), 'max_date')
+      ->selectAlias($qb->createFunction($totalMinutesExpr), 'total_minutes')
+      ->selectAlias($qb->createFunction($totalWorkdaysExpr), 'total_workdays')
+      ->from('ts_entries')
+      ->where($qb->expr()->in('user_id', $qb->createNamedParameter($userIds, IQueryBuilder::PARAM_STR_ARRAY)))
+      ->groupBy('user_id');
+
+    $rows = $qb->executeQuery()->fetchAll();
+    if (!$rows) {
+      return [];
+    }
+
+    $out = [];
+    foreach ($rows as $row) {
+      $uid = (string)($row['user_id'] ?? '');
+      if ($uid === '' || !$row['min_date']) continue;
+      $out[$uid] = [
+        'from' => (string)$row['min_date'],
+        'to' => (string)$row['max_date'],
+        'totalMinutes' => (int)$row['total_minutes'],
+        'totalWorkdays' => (int)$row['total_workdays'],
+      ];
+    }
+
+    return $out;
+  }
+
+  /**
+   * @param string[] $userIds
+   * @return array<string, string>
+   */
+  public function getLastEntryDatesForUsers(array $userIds, string $fromYmd, string $toYmd): array {
+    if ($userIds === []) {
+      return [];
+    }
+
+    $qb = $this->db->getQueryBuilder();
+    $qb->select('user_id')
+      ->selectAlias($qb->createFunction('MAX(`work_date`)'), 'last_date')
+      ->from($this->getTableName())
+      ->where($qb->expr()->in('user_id', $qb->createNamedParameter($userIds, IQueryBuilder::PARAM_STR_ARRAY)))
+      ->andWhere($qb->expr()->gte('work_date', $qb->createNamedParameter($fromYmd)))
+      ->andWhere($qb->expr()->lte('work_date', $qb->createNamedParameter($toYmd)))
+      ->groupBy('user_id');
+
+    $rows = $qb->executeQuery()->fetchAll();
+    if (!$rows) {
+      return [];
+    }
+
+    $out = [];
+    foreach ($rows as $row) {
+      $uid = (string)($row['user_id'] ?? '');
+      $last = (string)($row['last_date'] ?? '');
+      if ($uid === '' || $last === '') continue;
+      $out[$uid] = $last;
+    }
+    return $out;
+  }
+
   public function countWorkdaysOnDates(string $userId, array $ymdDates): int {
     if ($ymdDates === []) {
       return 0;

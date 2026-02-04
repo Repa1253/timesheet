@@ -59,6 +59,37 @@ class UserConfigMapper extends QBMapper {
   }
 
   /**
+   * @param string[] $userIds
+   * @return array<string, array{dailyMin: int|null, state: string|null}>
+   */
+  public function getConfigDataForUsers(array $userIds): array {
+    if ($userIds === []) {
+      return [];
+    }
+
+    $qb = $this->db->getQueryBuilder();
+    $qb->select('user_id', 'work_minutes', 'state')
+      ->from('ts_user_config')
+      ->where($qb->expr()->in('user_id', $qb->createNamedParameter($userIds, IQueryBuilder::PARAM_STR_ARRAY)));
+
+    $rows = $qb->executeQuery()->fetchAll();
+    if (!$rows) {
+      return [];
+    }
+
+    $out = [];
+    foreach ($rows as $row) {
+      $uid = (string)($row['user_id'] ?? '');
+      if ($uid === '') continue;
+      $out[$uid] = [
+        'dailyMin' => isset($row['work_minutes']) ? (int)$row['work_minutes'] : null,
+        'state' => $row['state'] ?? null,
+      ];
+    }
+    return $out;
+  }
+
+  /**
   * Find the config entry for a given user.
   * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
   */

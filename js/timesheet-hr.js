@@ -37,33 +37,6 @@
     return getWarningThresholds();
   }
 
-  // Fetch the last entry date for a user
-  async function fetchLastEntryDate(userId) {
-    const today = new Date();
-    const toStr = today.toISOString().slice(0, 10);
-
-    const from = new Date(today);
-    from.setMonth(from.getMonth() - 6);
-    const fromStr = from.toISOString().slice(0, 10);
-
-    try {
-      const entries = await TS.api(`/api/entries?user=${encodeURIComponent(userId)}&from=${fromStr}&to=${toStr}`);
-      if (!Array.isArray(entries) || entries.length === 0) return null;
-
-      let latest = null;
-      for (const e of entries) {
-        const d = e?.workDate;
-        if (!d) continue;
-        if (d > toStr) continue;
-        if (!latest || d > latest) latest = d;  
-      }
-      return latest;
-    } catch (error) {
-      console.error(`❌ Failed to load the last entry for ${userId}:`, error);
-      return null;
-    }
-  }
-
   // Update HR statistics summary
   function updateHrStats() {
     TS.dom.refresh();
@@ -115,10 +88,10 @@
 
     try {
       const thresholds = await ensureWarningThresholds();
-      const users = await TS.api('/api/hr/users');
+      const users = await TS.api('/api/hr/userlist');
       const frag = document.createDocumentFragment();
       
-      (users || []).forEach(({ id, name }) => {
+      (users || []).forEach(({ id, name, dailyMin, overtimeMinutes, totalMinutes, lastEntryDate }) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><button type="button" data-user="${id}" class="hr-load-user">${name}</button></td>
@@ -130,72 +103,56 @@
         `;
         frag.appendChild(tr);
 
-        // Load individual user HR data
-        (async () => {
-          try {
-            const [cfg, overtime, lastDateStr] = await Promise.all([
-              TS.api(`/api/hr/config/${encodeURIComponent(id)}`),
-              TS.api(`/api/overtime/summary?user=${encodeURIComponent(id)}`),
-              fetchLastEntryDate(id)
-            ]);
+        const dailyMinutes = (typeof dailyMin === 'number' && Number.isFinite(dailyMin)) ? dailyMin : 480;
+        const targetCell = tr.querySelector('.hr-user-target');
+        if (targetCell) targetCell.textContent = U.minToHm(dailyMinutes);
 
-            const dailyMinutes = U.pickDailyMin(cfg) ?? 480;
-            const targetCell = tr.querySelector('.hr-user-target');
-            if (targetCell) targetCell.textContent = U.minToHm(dailyMinutes);
+        const totalMinutesMonth = (typeof totalMinutes === 'number' && Number.isFinite(totalMinutes)) ? totalMinutes : 0;
+        tr.dataset.totalMinutesMonth = String(totalMinutesMonth);
 
-            let overtimeMinutes = 0;
-            if (overtime) {
-              const totalMinutesMonth = overtime.totalMinutes ?? 0;
-              tr.dataset.totalMinutesMonth = String(totalMinutesMonth);
+        const overtimeMin = (typeof overtimeMinutes === 'number' && Number.isFinite(overtimeMinutes)) ? overtimeMinutes : 0;
+        const balanceCell = tr.querySelector('.hr-user-balance');
+        if (balanceCell) balanceCell.textContent = U.minToHm(overtimeMin);
 
-              overtimeMinutes = overtime.overtimeMinutes ?? 0;
-              const balanceCell = tr.querySelector('.hr-user-balance');
-              if (balanceCell) balanceCell.textContent = U.minToHm(overtimeMinutes);
-            }
+        const lastCell = tr.querySelector('.hr-user-last-entry');
+        if (lastCell && lastEntryDate) {
+          lastCell.textContent = U.formatDate(new Date(lastEntryDate));
+        }
 
-            const lastCell = tr.querySelector('.hr-user-last-entry');
-            if (lastCell && lastDateStr) {
-              lastCell.textContent = U.formatDate(new Date(lastDateStr));
-            }
+        const daysCell  = tr.querySelector('.hr-user-days-since');
+        const errorCell = tr.querySelector('.hr-user-errors');
 
-            const daysCell  = tr.querySelector('.hr-user-days-since');
-            const errorCell = tr.querySelector('.hr-user-errors');
+        const errors = [];
+        let diffDays = null;
 
-            const errors = [];
-            let diffDays = null;
-
-            if (lastDateStr) {
-              const today = new Date();
-              const todayStr = today.toISOString().slice(0, 10);
-              diffDays = Math.floor((Date.parse(todayStr) - Date.parse(lastDateStr)) / (1000 * 60 * 60 * 24));
-              if (diffDays < 0) diffDays = 0;
-              if (daysCell) daysCell.textContent = String(diffDays);
-              if (diffDays >= thresholds.noEntryDays) {
-                errors.push(`${t(S.appName, 'No entry for more than')} ${thresholds.noEntryDays} ${t(S.appName, 'days')}`);
-              }
-            } else {
-              errors.push(`${t(S.appName, 'No entry for more than')} ${thresholds.noEntryDays} ${t(S.appName, 'days')}`);
-            }
-
-            if (typeof overtimeMinutes === 'number') {
-              if (overtimeMinutes >= thresholds.overtimeThresholdMinutes) {
-                errors.push(t(S.appName, 'Too much overtime'));
-              } else if (overtimeMinutes <= -thresholds.negativeOvertimeThresholdMinutes) {
-                errors.push(t(S.appName, 'Too many negative hours'));
-              }
-            }
-
-            if (errorCell) errorCell.textContent = errors.join(', ');
-            updateHrStats();
-          } catch (error) {
-            console.warn(`⚠️ Failed to load HR data for user ${id}:`, error);
+        if (lastEntryDate) {
+          const today = new Date();
+          const todayStr = today.toISOString().slice(0, 10);
+          diffDays = Math.floor((Date.parse(todayStr) - Date.parse(lastEntryDate)) / (1000 * 60 * 60 * 24));
+          if (diffDays < 0) diffDays = 0;
+          if (daysCell) daysCell.textContent = String(diffDays);
+          if (diffDays >= thresholds.noEntryDays) {
+            errors.push(`${t(S.appName, 'No entry for more than')} ${thresholds.noEntryDays} ${t(S.appName, 'days')}`);
           }
-        })();
+        } else {
+          errors.push(`${t(S.appName, 'No entry for more than')} ${thresholds.noEntryDays} ${t(S.appName, 'days')}`);
+        }
+
+        if (typeof overtimeMin === 'number') {
+          if (overtimeMin >= thresholds.overtimeThresholdMinutes) {
+            errors.push(t(S.appName, 'Too much overtime'));
+          } else if (overtimeMin <= -thresholds.negativeOvertimeThresholdMinutes) {
+            errors.push(t(S.appName, 'Too many negative hours'));
+          }
+        }
+
+        if (errorCell) errorCell.textContent = errors.join(', ');
       });
 
       dom.userListEl.appendChild(frag);
+      updateHrStats();
     } catch (error) {
-      console.warn('⚠️ Failed to load HR user list:', error);
+      console.warn('Failed to load HR user list:', error);
     }
   }
 

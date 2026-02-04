@@ -13,6 +13,7 @@ return [
 
     // REST: Overview 
     ['name' => 'overview#users',              'url' => '/api/hr/users',         'verb' => 'GET'],
+    ['name' => 'overview#getHrUserListData',  'url' => '/api/hr/userlist',      'verb' => 'GET'],
     ['name' => 'overview#getOvertimeSummary', 'url' => '/api/overtime/summary', 'verb' => 'GET'],
 
     // REST: User config 
