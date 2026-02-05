@@ -9,6 +9,7 @@
 
   const S = TS.state;
   const U = TS.util;
+  const EN = TS.entries;
 
   TS.main = TS.main || {};
   const MAIN = TS.main;
@@ -145,6 +146,68 @@
     document.getElementById('export-hr-xlsx')?.addEventListener('click', () => TS.export.handleExportClick('hr'));
   }
 
+  // Bind auto-grow for comment textareas
+  function bindAutoGrowTextareas() {
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (el && el.matches('textarea.commentInput')) autogrowTextarea(el);
+    });
+  }
+
+  function normalizeBreakMode(mode) {
+    return mode === 'hours' ? 'hours' : 'minutes';
+  }
+
+  function updateBreakInputs(mode) {
+    const isHours = mode === 'hours';
+    document.querySelectorAll('input.breakMinutes').forEach(input => {
+      const parsed = U.parseBreakMinutesInput(input.value);
+      if (parsed == null) return;
+      input.type = isHours ? 'time' : 'text';
+      if (isHours) {
+        input.removeAttribute('inputmode');
+        input.removeAttribute('pattern');
+      } else {
+        input.setAttribute('inputmode', 'text');
+        input.setAttribute('pattern', '^-?\\d+(?::\\d+)?$');
+      }
+      input.value = U.formatBreakValue(parsed, mode);
+    });
+  }
+
+  function updateBreakToggleUI(mode) {
+    document.querySelectorAll('.ts-break-toggle').forEach(toggle => {
+      toggle.querySelectorAll('.ts-break-toggle-btn').forEach(btn => {
+        const active = btn.dataset.breakMode === mode;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    });
+  }
+
+  function setBreakMode(mode) {
+    const normalized = normalizeBreakMode(mode);
+    S.breakInputMode = normalized;
+    updateBreakInputs(normalized);
+    updateBreakToggleUI(normalized);
+  }
+
+  function bindBreakToggle() {
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.ts-break-toggle-btn');
+      if (!btn) return;
+      setBreakMode(btn.dataset.breakMode);
+    });
+
+    setBreakMode(S.breakInputMode || 'minutes');
+  }
+
+  // Auto-grow textarea function
+  function autogrowTextarea(textarea) {
+    textarea.style.height = '21px';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
   // Initialize main module
   async function init() {
     TS.dom.refresh();
@@ -157,15 +220,19 @@
     bindTabSwitching();
     bindAutoSave();
     bindExportButtons();
-
+    bindAutoGrowTextareas();
+    bindBreakToggle();
     updateMonthDisplay();
     updateHrMonthDisplay();
 
     const cfgReady = S.currentUserId ? TS.config.loadUserConfig(S.currentUserId) : Promise.resolve();
+    const rulesReady = TS.entries.loadRuleThresholds();
 
+    await rulesReady;
     await TS.entries.loadUserEntries(null, S.currentMonth);
     await cfgReady;
     await TS.entries.refreshOvertimeTotal(S.currentUserId, document);
+    document.querySelectorAll('textarea.commentInput').forEach(autogrowTextarea);
 
     const initRow = document.querySelector('#ts-body tr');
     if (initRow) TS.entries.updateWorkedHours(initRow);

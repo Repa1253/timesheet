@@ -62,7 +62,7 @@
           <th colspan="2"><?php p($l->t('Date')) ?></th>
           <th><?php p($l->t('Status')) ?></th>
           <th><?php p($l->t('Start')) ?></th>
-          <th><?php p($l->t('Break (min)')) ?></th>
+          <th><?php p($l->t('Break')) ?></th>
           <th><?php p($l->t('End')) ?></th>
           <th><?php p($l->t('Duration')) ?></th>
           <th><?php p($l->t('Difference')) ?></th>
@@ -75,13 +75,24 @@
         <!-- wird per JS gefüllt -->
       </tbody>
     </table>
+
+    <div class="ts-break-toggle" id="ts-break-toggle" role="group" aria-label="<?php p($l->t('Break input format')) ?>">
+      <span class="ts-break-toggle-label"><?php p($l->t('Break')) ?>:</span>
+      <button type="button" class="ts-break-toggle-btn is-active" data-break-mode="minutes" aria-pressed="true"><?php p($l->t('Minutes')) ?></button>
+      <button type="button" class="ts-break-toggle-btn" data-break-mode="hours" aria-pressed="false"><?php p($l->t('Hours')) ?></button>
+    </div>
   </div>
 
   <!-- HR-Übersicht -->
   <?php if ($_['isHR']): ?>
     <div id="tab-hr" class="ts-tabview">
-
       <div class="ts-hr-row">
+        <div id="hr-infobox-section" class="ts-hr-section ts-infobox">
+          <p class="ts-infobox-text">
+            <?php p($l->t('If you would like to request changes to break durations, permitted daily hours or timesheets of other employees, please contact your Nextcloud admin.')) ?>
+          </p>
+        </div>
+
         <!-- Mitarbeitende -->
         <div id="hr-userlist-section" class="ts-hr-section">
           <h4><?php p($l->t('Employees')) ?></h4>
@@ -173,6 +184,50 @@
                   <span><?php p($l->t('hours')) ?></span>
                 </td>
               </tr>
+              <tr class="hr-hint-row">
+                <td colspan="3"><?php p($l->t('When enabled, receive emails about warnings in the user list.')) ?></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="hr-warning-thresholds-section" class="ts-hr-section">
+          <h4><?php p($l->t('Warnings')) ?></h4>
+
+          <table class="grid hr-warning-thresholds-table">
+            <thead>
+              <tr>
+                <th><?php p($l->t('Warning')) ?></th>
+                <th><?php p($l->t('Threshold')) ?></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><?php p($l->t('No entry reminder')) ?></td>
+                <td>
+                  <input type="number" id="hr-warn-no-entry-days" min="1" max="365" step="1" value="14">
+                  <span><?php p($l->t('days')) ?></span>
+                </td>
+              </tr>
+
+              <tr>
+                <td><?php p($l->t('Overtime warning')) ?></td>
+                <td>
+                  <input type="time" id="hr-warn-overtime-threshold" value="10:00" step="60">
+                  <span><?php p($l->t('hours')) ?></span>
+                </td>
+              </tr>
+
+              <tr>
+                <td><?php p($l->t('Negative overtime warning')) ?></td>
+                <td>
+                  <input type="time" id="hr-warn-negative-threshold" value="10:00" step="60">
+                  <span><?php p($l->t('hours')) ?></span>
+                </td>
+              </tr>
+              <tr class="hr-hint-row">
+                <td colspan="2"><?php p($l->t('Warnings are shown when employees reach the threshold.')) ?></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -238,7 +293,7 @@
               <th colspan="2"><?php p($l->t('Date')) ?></th>
               <th><?php p($l->t('Status')) ?></th>
               <th><?php p($l->t('Start')) ?></th>
-              <th><?php p($l->t('Break (min)')) ?></th>
+              <th><?php p($l->t('Break')) ?></th>
               <th><?php p($l->t('End')) ?></th>
               <th><?php p($l->t('Duration')) ?></th>
               <th><?php p($l->t('Difference')) ?></th>
@@ -250,6 +305,12 @@
             <!-- wird per JS gefüllt -->
           </tbody>
         </table>
+
+        <div class="ts-break-toggle" id="ts-break-toggle-hr" role="group" aria-label="<?php p($l->t('Break input format')) ?>">
+          <span class="ts-break-toggle-label"><?php p($l->t('Break')) ?>:</span>
+          <button type="button" class="ts-break-toggle-btn is-active" data-break-mode="minutes" aria-pressed="true"><?php p($l->t('Minutes')) ?></button>
+          <button type="button" class="ts-break-toggle-btn" data-break-mode="hours" aria-pressed="false"><?php p($l->t('Hours')) ?></button>
+        </div>
       </div>
     </div>
   <?php endif; ?>

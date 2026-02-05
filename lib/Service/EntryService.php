@@ -13,11 +13,18 @@ class EntryService {
   ) {}
 
   public function create(array $data, ?string $forceUserId = null): Entry {
-    $entry = new Entry();
     $userId = $forceUserId ?? $this->userSession->getUser()->getUID();
+    $workDate = (string)$data['workDate'];
+
+    $existing = $this->mapper->findByUserAndDate($userId, $workDate);
+    if ($existing) {
+      throw new \DomainException('Entry already exists', 409);
+    }
+
+    $entry = new Entry();
 
     $entry->setUserId($userId);
-    $entry->setWorkDate($data['workDate']);
+    $entry->setWorkDate($workDate);
     $entry->setStartMin((int)$data['startMin']);
     $entry->setEndMin((int)$data['endMin']);
     $entry->setBreakMinutes((int)($data['breakMinutes'] ?? 0));
@@ -35,6 +42,16 @@ class EntryService {
     $currentUser = $this->userSession->getUser()->getUID();
     if (!$isHr && $entry->getUserId() !== $currentUser) {
       throw new \RuntimeException('Not allowed');
+    }
+
+    if (array_key_exists('workDate', $data)) {
+      $newWorkDate = (string)$data['workDate'];
+      if ($newWorkDate !== '' && $newWorkDate !== $entry->getWorkDate()) {
+        $existing = $this->mapper->findByUserAndDate($entry->getUserId(), $newWorkDate);
+        if ($existing && $existing->getId() !== $entry->getId()) {
+          throw new \DomainException('Entry already exists', 409);
+        }
+      }
     }
 
     foreach (['workDate', 'startMin', 'endMin', 'breakMinutes', 'comment'] as $k) {

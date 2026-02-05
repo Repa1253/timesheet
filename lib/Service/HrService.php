@@ -19,7 +19,7 @@ class HrService {
     private IUserSession $userSession,
     private IGroupManager $groupManager
   ) {
-    $this->rules = $this->loadRulesWithLegacyFallback();
+    $this->rules = $this->loadRules();
     $this->hrGroups = $this->collectAllHrGroups($this->rules);
   }
 
@@ -156,37 +156,13 @@ class HrService {
   /**
    * @return array<int, array{id:string,hrGroups:string[],userGroups:string[]}>
    */
-  private function loadRulesWithLegacyFallback(): array {
+  private function loadRules(): array {
     $rulesJson = (string)$this->appConfig->getAppValueString('hr_access_rules');
+    if (trim($rulesJson) === '') return [];
     $rules = json_decode($rulesJson, true);
-
-    if (is_array($rules) && count($rules) > 0) {
-      $clean = $this->sanitizeRules($rules);
-      if ($clean) return $clean;
-    }
-
-    $rawHr = (string)$this->appConfig->getAppValueString('hr_groups');
-    $hr = json_decode($rawHr, true);
-    if (!is_array($hr)) {
-      $hr = array_filter(array_map('trim', explode(',', $rawHr)));
-    }
-
-    $rawUsers = (string)$this->appConfig->getAppValueString('hr_user_groups');
-    $users = json_decode($rawUsers, true);
-    if (!is_array($users)) {
-      $users = array_filter(array_map('trim', explode(',', $rawUsers)));
-    }
-
-    $hr = $this->cleanGroupList($hr);
-    $users = $this->cleanGroupList($users);
-
-    if (!$hr) return [];
-
-    return [[
-      'id' => 'legacy',
-      'hrGroups' => $hr,
-      'userGroups' => $users,
-    ]];
+    if (!is_array($rules) || count($rules) === 0) return [];
+    $clean = $this->sanitizeRules($rules);
+    return $clean ?: [];
   }
 
   /**

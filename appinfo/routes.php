@@ -13,6 +13,7 @@ return [
 
     // REST: Overview 
     ['name' => 'overview#users',              'url' => '/api/hr/users',         'verb' => 'GET'],
+    ['name' => 'overview#getHrUserListData',  'url' => '/api/hr/userlist',      'verb' => 'GET'],
     ['name' => 'overview#getOvertimeSummary', 'url' => '/api/overtime/summary', 'verb' => 'GET'],
 
     // REST: User config 
@@ -21,14 +22,17 @@ return [
 
     ['name' => 'config#getHrNotificationSettings', 'url' => '/api/hr/notifications', 'verb' => 'GET'],
     ['name' => 'config#setHrNotificationSettings', 'url' => '/api/hr/notifications', 'verb' => 'PUT'],
+    ['name' => 'config#getHrWarningThresholds', 'url' => '/api/hr/warnings', 'verb' => 'GET'],
+    ['name' => 'config#setHrWarningThresholds', 'url' => '/api/hr/warnings', 'verb' => 'PUT'],
+    ['name' => 'config#getEffectiveRulesSelf', 'url' => '/api/rules/effective', 'verb' => 'GET'],
+    ['name' => 'config#getEffectiveRulesForUser', 'url' => '/api/rules/effective/{userId}', 'verb' => 'GET'],
 
     // REST: Holidays 
     ['name' => 'holiday#getHolidays', 'url' => '/api/holidays', 'verb' => 'GET'],
 
     // Admin settings
-    ['name' => 'settings#saveAdmin',          'url' => '/admin/settings',           'verb' => 'POST'],
-    ['name' => 'settings#updateHrGroups',     'url' => '/settings/hr_groups',       'verb' => 'POST'],
-    ['name' => 'settings#updateHrUserGroups', 'url' => '/settings/hr_user_groups',  'verb' => 'POST'],
-    ['name' => 'settings#saveHrAccessRules',  'url' => '/settings/hr_access_rules', 'verb' => 'POST'],
+    ['name' => 'settings#saveHrAccessRules',    'url' => '/settings/hr_access_rules',   'verb' => 'POST'],
+    ['name' => 'settings#saveSpecialDaysCheck', 'url' => '/settings/specialdays_check', 'verb' => 'POST'],
+    ['name' => 'settings#loadSpecialDaysCheck', 'url' => '/settings/specialdays_check', 'verb' => 'GET'],
   ],
 ];

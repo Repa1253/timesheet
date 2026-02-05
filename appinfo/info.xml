@@ -4,7 +4,7 @@
 	<id>timesheet</id>
 
 	<name>Timesheet</name>
-	<name lang="de">Arbeitszeitnachweis</name>
+	<name lang="de">Arbeitszeitnachweis (Timesheet)</name>
 
 	<summary>Timesheet tracking in Nextcloud with HR dashboard, overtime and export</summary>
 	<summary lang="de">Zeiterfassung in Nextcloud mit HR-Dashboard, Überstunden und Export</summary>
@@ -27,11 +27,11 @@ HR-Anwender erhalten ein zentrales Dashboard für alle Mitarbeiter mit Zielstund
 Die App ist schlank gehalten: Pausen werden als eine Gesamt-Dauer erfasst. 
 Die Zielzeit ist ein einheitlicher Tageswert, wodurch sie sich besonders für klassische Vollzeitmodelle eignet.
 	]]></description>
-	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture.PNG</screenshot>
-	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture2.PNG</screenshot>
-	<screenshot>https://raw.githubusercontent.com/Repa1253/timesheet/main/img/Capture3.PNG</screenshot>
+	<screenshot small-thumbnail="https://nextcloud-agentur.de/timesheet/timesheet_userlist_small.png">https://nextcloud-agentur.de/timesheet/timesheet_userlist.png</screenshot>
+	<screenshot>https://nextcloud-agentur.de/timesheet/timesheet_hrOverview.png</screenshot>
+	<screenshot>https://nextcloud-agentur.de/timesheet/timesheet_englishSupport.png</screenshot>
 
-	<version>1.1.2</version>
+	<version>1.1.3</version>
 	<licence>agpl</licence>
 	<author mail="dgu@xiller.com">David Gun (www.xiller-academy.de)</author>
 	<category>tools</category>

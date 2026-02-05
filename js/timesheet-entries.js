@@ -10,6 +10,46 @@
   TS.entries = TS.entries || {};
   const EN = TS.entries;
 
+  // Cache rule thresholds per user
+  S.ruleThresholdsByUser = S.ruleThresholdsByUser || new Map();
+
+  async function loadRuleThresholds(userId = null) {
+    const uid = userId || S.currentUserId;
+    if (!uid) {
+      S.ruleThresholds = TS.util.RULE_DEFAULTS;
+      return S.ruleThresholds;
+    }
+
+    if (S.ruleThresholdsByUser.has(uid)) {
+      const cached = S.ruleThresholdsByUser.get(uid);
+      if (!userId || uid === S.currentUserId) S.ruleThresholds = cached;
+      return cached;
+    }
+
+    try {
+      const path = userId ? `/api/rules/effective/${encodeURIComponent(uid)}` : '/api/rules/effective';
+      const data = await TS.api(path);
+      if (data && typeof data === 'object') {
+        S.ruleThresholdsByUser.set(uid, data);
+        if (!userId || uid === S.currentUserId) S.ruleThresholds = data;
+        return data;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to load rule thresholds:', error);
+    }
+
+    // fallback
+    const fallback = TS.util.RULE_DEFAULTS;
+    S.ruleThresholdsByUser.set(uid, fallback);
+    if (!userId || uid === S.currentUserId) S.ruleThresholds = fallback;
+    return fallback;
+  }
+
+  function getRuleThresholds(userId = null) {
+    const uid = userId || S.currentUserId;
+    return (uid && S.ruleThresholdsByUser.get(uid)) || S.ruleThresholds || TS.util.RULE_DEFAULTS;
+  }
+
   // Cache for holidays data
   async function getHolidays(year, state) {
     if (!state) return {};
@@ -47,7 +87,7 @@
   }
 
   // Create a table row element for the given date and entry data
-  function createEntryRow(dateObj, entry, holidayMap = {}, dailyMin = null) {
+  function createEntryRow(dateObj, entry, holidayMap = {}, dailyMin = null, specialDaysEnabled = false, thresholds = null) {
     const dateStr = U.toLocalIsoDate(dateObj);
     const dayIndex = dateObj.getDay();
     const isHoliday = Object.prototype.hasOwnProperty.call(holidayMap, dateStr);
@@ -58,25 +98,31 @@
     const endMin   = entry?.endMin ?? null;
     const brkMin   = entry?.breakMinutes ?? 0;
 
-    const durMin = (startMin != null && endMin != null) ? Math.max(0, endMin - startMin - brkMin) : null;
-    const diffMin = (durMin != null && dailyMin != null) ? (durMin - dailyMin) : null;
+    const durMin = U.calcWorkMinutes(startMin, endMin, brkMin);
+    const diffMin = (durMin == null) ? null : (specialDaysEnabled && (isHoliday || isWeekend) ? durMin : (dailyMin != null ? (durMin - dailyMin) : null));
 
-    const warning = U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap);
+    const warning = U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap, thresholds);
 
     const startStr = startMin != null ? U.minToHm(startMin) : '';
     const endStr   = endMin   != null ? U.minToHm(endMin)   : '';
-    const breakStr = String(brkMin ?? 0);
+    const breakStr = U.formatBreakValue(brkMin, S.breakInputMode);
     const commentStr = entry?.comment ?? '';
     const durStr  = U.minToHm(durMin);
     const diffStr = U.minToHm(diffMin);
+    const breakMode = S.breakInputMode === 'hours' ? 'hours' : 'minutes';
+    const breakInputType = breakMode === 'hours' ? 'time' : 'text';
+    const breakInputAttrs = breakMode === 'hours'
+      ? ''
+      : ' inputmode="text" pattern="^-?\\d+(?::\\d+)?$"';
 
     const tr = document.createElement('tr');
     tr.dataset.date = dateStr;
     if (entry?.id) tr.dataset.id = entry.id;
 
+    tr.dataset.isSpecialDay = (isHoliday || isWeekend) ? '1' : '0';
     tr.dataset.savedStart = startStr;
     tr.dataset.savedEnd = endStr;
-    tr.dataset.savedBreak = breakStr;
+    tr.dataset.savedBreak = String(brkMin ?? 0);
     tr.dataset.savedComment = commentStr;
 
     if (isHoliday || isWeekend) tr.classList.add('is-weekend-row');
@@ -95,7 +141,7 @@
       <td>${U.dayLabel(dayIndex)}</td>
       <td class="ts-status ${isWeekend ? 'is-weekend' : ''}">${statusText}</td>
       <td><input type="time" class="startTime" value="${startStr}"></td>
-      <td><input type="text" class="breakMinutes" inputmode="text" pattern="^-?\d+(?::\d+)?$" value="${breakStr}"></td>
+      <td><input type="${breakInputType}" class="breakMinutes"${breakInputAttrs} value="${breakStr}"></td>
       <td><input type="time" class="endTime" value="${endStr}"></td>
       <td class="ts-duration">${durStr}</td>
       <td class="ts-diff">${diffStr}</td>
@@ -111,14 +157,17 @@
     if (!tbody) return;
 
     let totalMinutes = 0;
-    let workedDays   = 0;
+    let baselineDays   = 0;
+
+    const specialDaysEnabled = tbody.dataset.specialDays === '1';
 
     tbody.querySelectorAll('tr').forEach(row => {
       const durText = row.querySelector('.ts-duration')?.textContent.trim();
       const durMin  = U.hmToMin(durText);
       if (durMin != null) {
         totalMinutes += durMin;
-        workedDays++;
+        const isSpecialDay = row.dataset.isSpecialDay === '1' || row.classList.contains('is-weekend-row');
+        if (!(specialDaysEnabled && isSpecialDay)) baselineDays++;
       }
     });
 
@@ -129,7 +178,7 @@
     const overtimeEl = root.querySelector('#overtime-month');
 
     const dailyMin = getEffectiveDailyMin(container);
-    const overtime = totalMinutes - (workedDays * dailyMin);
+    const overtime = totalMinutes - (baselineDays * dailyMin);
 
     if (workedEl)   workedEl.textContent   = U.minToHm(totalMinutes);
     if (overtimeEl) overtimeEl.textContent = U.minToHm(overtime);
@@ -161,6 +210,8 @@
       ? `/api/entries?user=${encodeURIComponent(userId)}&from=${fromStr}&to=${toStr}`
       : `/api/entries?from=${fromStr}&to=${toStr}`;
 
+    const thresholds = await loadRuleThresholds(userId || S.currentUserId);
+
     const entries = await TS.api(query).catch(error => {
       console.error('❌ Failed to load entries:', error);
       return [];
@@ -190,11 +241,14 @@
     const container = userId ? document.getElementById('hr-user-entries') : null;
     const dailyMin = getEffectiveDailyMin(container);
 
+    const specialDaysEnabled = await loadSpecialDaysCheck();
+    body.dataset.specialDays = specialDaysEnabled ? '1' : '0';
+
     const frag = document.createDocumentFragment();
     for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
       const dateKey = U.toLocalIsoDate(d);
       const entry = entryMap[dateKey];
-      const row = createEntryRow(new Date(d), entry, holidayMap, dailyMin);
+      const row = createEntryRow(new Date(d), entry, holidayMap, dailyMin, specialDaysEnabled, thresholds);
       frag.appendChild(row);
     }
     body.appendChild(frag);
@@ -206,6 +260,7 @@
   async function deleteEntryForRow(row) {
     const entryId = row.dataset.id || null;
     if (!entryId) return;
+    if (!U.ensureWriteAllowed || !U.ensureWriteAllowed()) return;
 
     const startInput   = row.querySelector('.startTime');
     const endInput     = row.querySelector('.endTime');
@@ -221,7 +276,7 @@
 
     if (startInput)   startInput.value   = '';
     if (endInput)     endInput.value     = '';
-    if (breakInput)   breakInput.value   = '0';
+    if (breakInput)   breakInput.value   = U.formatBreakValue(0, S.breakInputMode);
     if (commentInput) commentInput.value = '';
 
     row.dataset.savedStart   = '';
@@ -309,14 +364,14 @@
     if (!isCommentOnly) {
       breakMin = U.parseBreakMinutesInput(breakInput.value);
       if (breakMin == null) {
-        breakInput.value = String(Number.isFinite(savedBreak) ? savedBreak : 0);
+        breakInput.value = U.formatBreakValue(Number.isFinite(savedBreak) ? savedBreak : 0, S.breakInputMode);
         return;
       }
-      breakInput.value = String(breakMin);
+      breakInput.value = U.formatBreakValue(breakMin, S.breakInputMode);
 
       const startMin = U.hmToMin(startVal);
       const endMin   = U.hmToMin(endVal);
-      const duration = (startMin != null && endMin != null) ? Math.max(0, endMin - startMin - breakMin) : null;
+      const duration = U.calcWorkMinutes(startMin, endMin, breakMin);
 
       let stateCode;
       if (isHr) {
@@ -331,7 +386,8 @@
       const baseDailyMin = getEffectiveDailyMin(isHr ? document.getElementById('hr-user-entries') : null);
       const diffMin = (duration != null && baseDailyMin != null) ? (duration - baseDailyMin) : null;
 
-      if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: breakMin }, workDate, holidayMap);
+      const thresholds = getRuleThresholds(isHr ? document.querySelector('#hr-user-title span')?.textContent : S.currentUserId);
+      if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: breakMin }, workDate, holidayMap, thresholds);
       if (durCell)  durCell.textContent  = U.minToHm(duration);
       if (diffCell) diffCell.textContent = U.minToHm(diffMin);
 
@@ -350,6 +406,7 @@
       }
     }
 
+    if (!U.ensureWriteAllowed || !U.ensureWriteAllowed()) return;
     row.dataset.saving = '1';
 
     try {
@@ -380,7 +437,7 @@
       if (isCommentOnly) {
         if (startInput) startInput.value = '';
         if (endInput)   endInput.value   = '';
-        if (breakInput) breakInput.value = '0';
+        if (breakInput) breakInput.value = U.formatBreakValue(0, S.breakInputMode);
         if (warnCell)   warnCell.textContent = '';
         if (durCell)    durCell.textContent  = '--:--';
         if (diffCell)   diffCell.textContent = '--:--';
@@ -411,11 +468,33 @@
     }
   }
 
+  async function loadSpecialDaysCheck() {
+    if (S.specialDaysCheckValue != null) return S.specialDaysCheckValue;
+    if (S.specialDaysCheckPromise) return S.specialDaysCheckPromise;
+
+    S.specialDaysCheckPromise = (async () => {
+      try {
+        const r = await TS.api('/settings/specialdays_check');
+        S.specialDaysCheckValue = !!r?.check;
+        return S.specialDaysCheckValue;
+      } catch (_) {
+        S.specialDaysCheckValue = false;
+        return false;
+      } finally {
+        S.specialDaysCheckPromise = null;
+      }
+    })();
+
+    return S.specialDaysCheckPromise;
+  }
+
   // Export functions
   EN.getHolidays = getHolidays;
   EN.getEffectiveDailyMin = getEffectiveDailyMin;
   EN.createEntryRow = createEntryRow;
   EN.loadUserEntries = loadUserEntries;
+  EN.loadRuleThresholds = loadRuleThresholds;
+  EN.getRuleThresholds = getRuleThresholds;
   EN.updateWorkedHours = updateWorkedHours;
   EN.refreshOvertimeTotal = refreshOvertimeTotal;
   EN.deleteEntryForRow = deleteEntryForRow;

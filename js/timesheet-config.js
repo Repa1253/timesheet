@@ -88,6 +88,63 @@
     }
   }
 
+  async function loadHrWarningThresholds() {
+    if (!S.currentUserId) return;
+
+    TS.dom.refresh();
+    const dom = TS.dom;
+    if (!dom.hrWarningThresholdsSection) return;
+
+    try {
+      const settings = await TS.api('/api/hr/warnings');
+      S.hrWarningThresholds = settings || null;
+
+      if (!dom.hrWarnNoEntryDays) return;
+
+      dom.hrWarnNoEntryDays.value = String(settings?.noEntryDays ?? 14);
+      dom.hrWarnOvertimeThreshold.value = U.minToHm(settings?.overtimeThresholdMinutes ?? 600).replace('-', '');
+      dom.hrWarnNegativeThreshold.value = U.minToHm(settings?.negativeOvertimeThresholdMinutes ?? 600).replace('-', '');
+    } catch (error) {
+      console.warn('âš ï¸ Could not load HR warning thresholds', error);
+    }
+  }
+
+  async function saveHrWarningThresholds() {
+    if (!S.currentUserId) return;
+
+    TS.dom.refresh();
+    const dom = TS.dom;
+    if (!dom.hrWarningThresholdsSection) return;
+
+    const days = parseInt(dom.hrWarnNoEntryDays?.value || '14', 10);
+    const otMin  = U.hmToMin(dom.hrWarnOvertimeThreshold?.value || '10:00');
+    const negMin = U.hmToMin(dom.hrWarnNegativeThreshold?.value || '10:00');
+
+    const payload = {
+      noEntryDays: Number.isFinite(days) ? Math.min(365, Math.max(1, days)) : 14,
+      overtimeThresholdMinutes: (typeof otMin === 'number' && Number.isFinite(otMin)) ? Math.max(0, otMin) : 600,
+      negativeOvertimeThresholdMinutes: (typeof negMin === 'number' && Number.isFinite(negMin)) ? Math.max(0, negMin) : 600,
+    };
+
+    try {
+      const result = await TS.api('/api/hr/warnings', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+
+      S.hrWarningThresholds = result || payload;
+      TS.notify(t(S.appName, 'Saved'));
+
+      const hrTabActive = document.getElementById('tab-hr')?.classList.contains('active');
+      if (hrTabActive && TS.hr?.loadHrUserList) {
+        TS.hr.loadHrUserList();
+      }
+    } catch (error) {
+      console.error('âŒ Failed to save HR warning thresholds:', error);
+      TS.notify(t(S.appName, 'Save failed'));
+    }
+  }
+
   // Initialize configuration handlers
   function init() {
     TS.dom.refresh();
@@ -190,9 +247,38 @@
         booting = false;
       })();
     }
+
+    // HR Warning Thresholds
+    if (dom.hrWarningThresholdsSection) {
+      let booting = true;
+      let timer = null;
+
+      const scheduleSave = () => {
+        if (booting) return;
+        clearTimeout(timer);
+        timer = setTimeout(() => saveHrWarningThresholds(), 450);
+      };
+
+      const inputs = [
+        dom.hrWarnNoEntryDays,
+        dom.hrWarnOvertimeThreshold,
+        dom.hrWarnNegativeThreshold,
+      ].filter(Boolean);
+
+      inputs.forEach(el => {
+        el.addEventListener('change', scheduleSave);
+        el.addEventListener('input', scheduleSave);
+      });
+
+      (async () => {
+        await loadHrWarningThresholds();
+        booting = false;
+      })();
+    }
   }
 
   // Expose functions
   CFG.init = init;
   CFG.loadUserConfig = loadUserConfig;
+  CFG.loadHrWarningThresholds = loadHrWarningThresholds;
 })();
