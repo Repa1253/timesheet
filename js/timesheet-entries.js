@@ -20,6 +20,12 @@
       return S.ruleThresholds;
     }
 
+    if (S.ruleThresholdsByUser.has(uid)) {
+      const cached = S.ruleThresholdsByUser.get(uid);
+      if (!userId || uid === S.currentUserId) S.ruleThresholds = cached;
+      return cached;
+    }
+
     try {
       const path = userId ? `/api/rules/effective/${encodeURIComponent(uid)}` : '/api/rules/effective';
       const data = await TS.api(path);
@@ -463,12 +469,23 @@
   }
 
   async function loadSpecialDaysCheck() {
-    try {
-      const r = await TS.api('/settings/specialdays_check');
-      return !!r?.check;
-    } catch (_) {
-      return false;
-    }
+    if (S.specialDaysCheckValue != null) return S.specialDaysCheckValue;
+    if (S.specialDaysCheckPromise) return S.specialDaysCheckPromise;
+
+    S.specialDaysCheckPromise = (async () => {
+      try {
+        const r = await TS.api('/settings/specialdays_check');
+        S.specialDaysCheckValue = !!r?.check;
+        return S.specialDaysCheckValue;
+      } catch (_) {
+        S.specialDaysCheckValue = false;
+        return false;
+      } finally {
+        S.specialDaysCheckPromise = null;
+      }
+    })();
+
+    return S.specialDaysCheckPromise;
   }
 
   // Export functions
