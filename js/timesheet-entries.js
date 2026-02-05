@@ -99,10 +99,15 @@
 
     const startStr = startMin != null ? U.minToHm(startMin) : '';
     const endStr   = endMin   != null ? U.minToHm(endMin)   : '';
-    const breakStr = String(brkMin ?? 0);
+    const breakStr = U.formatBreakValue(brkMin, S.breakInputMode);
     const commentStr = entry?.comment ?? '';
     const durStr  = U.minToHm(durMin);
     const diffStr = U.minToHm(diffMin);
+    const breakMode = S.breakInputMode === 'hours' ? 'hours' : 'minutes';
+    const breakInputType = breakMode === 'hours' ? 'time' : 'text';
+    const breakInputAttrs = breakMode === 'hours'
+      ? ''
+      : ' inputmode="text" pattern="^-?\\d+(?::\\d+)?$"';
 
     const tr = document.createElement('tr');
     tr.dataset.date = dateStr;
@@ -111,7 +116,7 @@
     tr.dataset.isSpecialDay = (isHoliday || isWeekend) ? '1' : '0';
     tr.dataset.savedStart = startStr;
     tr.dataset.savedEnd = endStr;
-    tr.dataset.savedBreak = breakStr;
+    tr.dataset.savedBreak = String(brkMin ?? 0);
     tr.dataset.savedComment = commentStr;
 
     if (isHoliday || isWeekend) tr.classList.add('is-weekend-row');
@@ -130,7 +135,7 @@
       <td>${U.dayLabel(dayIndex)}</td>
       <td class="ts-status ${isWeekend ? 'is-weekend' : ''}">${statusText}</td>
       <td><input type="time" class="startTime" value="${startStr}"></td>
-      <td><input type="text" class="breakMinutes" inputmode="text" pattern="^-?\d+(?::\d+)?$" value="${breakStr}"></td>
+      <td><input type="${breakInputType}" class="breakMinutes"${breakInputAttrs} value="${breakStr}"></td>
       <td><input type="time" class="endTime" value="${endStr}"></td>
       <td class="ts-duration">${durStr}</td>
       <td class="ts-diff">${diffStr}</td>
@@ -265,7 +270,7 @@
 
     if (startInput)   startInput.value   = '';
     if (endInput)     endInput.value     = '';
-    if (breakInput)   breakInput.value   = '0';
+    if (breakInput)   breakInput.value   = U.formatBreakValue(0, S.breakInputMode);
     if (commentInput) commentInput.value = '';
 
     row.dataset.savedStart   = '';
@@ -353,10 +358,10 @@
     if (!isCommentOnly) {
       breakMin = U.parseBreakMinutesInput(breakInput.value);
       if (breakMin == null) {
-        breakInput.value = String(Number.isFinite(savedBreak) ? savedBreak : 0);
+        breakInput.value = U.formatBreakValue(Number.isFinite(savedBreak) ? savedBreak : 0, S.breakInputMode);
         return;
       }
-      breakInput.value = String(breakMin);
+      breakInput.value = U.formatBreakValue(breakMin, S.breakInputMode);
 
       const startMin = U.hmToMin(startVal);
       const endMin   = U.hmToMin(endVal);
@@ -426,7 +431,7 @@
       if (isCommentOnly) {
         if (startInput) startInput.value = '';
         if (endInput)   endInput.value   = '';
-        if (breakInput) breakInput.value = '0';
+        if (breakInput) breakInput.value = U.formatBreakValue(0, S.breakInputMode);
         if (warnCell)   warnCell.textContent = '';
         if (durCell)    durCell.textContent  = '--:--';
         if (diffCell)   diffCell.textContent = '--:--';

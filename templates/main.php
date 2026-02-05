@@ -62,7 +62,7 @@
           <th colspan="2"><?php p($l->t('Date')) ?></th>
           <th><?php p($l->t('Status')) ?></th>
           <th><?php p($l->t('Start')) ?></th>
-          <th><?php p($l->t('Break (min)')) ?></th>
+          <th><?php p($l->t('Break')) ?></th>
           <th><?php p($l->t('End')) ?></th>
           <th><?php p($l->t('Duration')) ?></th>
           <th><?php p($l->t('Difference')) ?></th>
@@ -75,6 +75,12 @@
         <!-- wird per JS gefüllt -->
       </tbody>
     </table>
+
+    <div class="ts-break-toggle" id="ts-break-toggle" role="group" aria-label="<?php p($l->t('Break input format')) ?>">
+      <span class="ts-break-toggle-label"><?php p($l->t('Break')) ?>:</span>
+      <button type="button" class="ts-break-toggle-btn is-active" data-break-mode="minutes" aria-pressed="true"><?php p($l->t('Minutes')) ?></button>
+      <button type="button" class="ts-break-toggle-btn" data-break-mode="hours" aria-pressed="false"><?php p($l->t('Hours')) ?></button>
+    </div>
   </div>
 
   <!-- HR-Übersicht -->
@@ -287,7 +293,7 @@
               <th colspan="2"><?php p($l->t('Date')) ?></th>
               <th><?php p($l->t('Status')) ?></th>
               <th><?php p($l->t('Start')) ?></th>
-              <th><?php p($l->t('Break (min)')) ?></th>
+              <th><?php p($l->t('Break')) ?></th>
               <th><?php p($l->t('End')) ?></th>
               <th><?php p($l->t('Duration')) ?></th>
               <th><?php p($l->t('Difference')) ?></th>
@@ -299,6 +305,12 @@
             <!-- wird per JS gefüllt -->
           </tbody>
         </table>
+
+        <div class="ts-break-toggle" id="ts-break-toggle-hr" role="group" aria-label="<?php p($l->t('Break input format')) ?>">
+          <span class="ts-break-toggle-label"><?php p($l->t('Break')) ?>:</span>
+          <button type="button" class="ts-break-toggle-btn is-active" data-break-mode="minutes" aria-pressed="true"><?php p($l->t('Minutes')) ?></button>
+          <button type="button" class="ts-break-toggle-btn" data-break-mode="hours" aria-pressed="false"><?php p($l->t('Hours')) ?></button>
+        </div>
       </div>
     </div>
   <?php endif; ?>

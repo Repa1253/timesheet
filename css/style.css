@@ -52,18 +52,10 @@
   width: 30%; /* 2 * 30% = 60% */
 }
 
-#ts-table td:nth-child(5),
-#hr-user-table td:nth-child(5) {
-  padding-left: 0;
-  padding-right: 0;
-}
-
 #ts-table input.breakMinutes,
 #hr-user-table input.breakMinutes {
-  width: 3.5em;      /* z.B. 3–4 Ziffern breit, anpassbar */
-  padding: 0;        /* kein zusätzliches Innenpadding */
-  margin: 0 auto;    /* in der Zelle zentrieren */
-  box-sizing: content-box; /* Breite nur nach Inhalt bemessen */
+  width: 5em;
+  text-align: center;
 }
 
 #ts-table thead th,
@@ -322,6 +314,34 @@
   border-radius: 6px;
   padding: 0px 5px;
   margin-bottom: 6px;
+}
+
+.ts-break-toggle {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+.ts-break-toggle-label {
+  font-weight: 600;
+}
+
+.ts-break-toggle-btn {
+  background: var(--color-background-dark, #f6f8fa);
+  border: 1px solid var(--color-border, #d0d7de);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ts-break-toggle-btn.is-active {
+  background: var(--color-primary, #0082c9);
+  border-color: var(--color-primary, #0082c9);
+  color: var(--color-primary-text, #ffffff);
 }
 
 /* Buttons innerhalb der Kopfbereiche: klarer Kontrast */

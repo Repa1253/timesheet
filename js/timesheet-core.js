@@ -44,6 +44,7 @@
   })();
 
   S.userConfig = null;
+  S.breakInputMode = 'minutes';
 
   // Current month tracking
   S.currentMonth = new Date();
@@ -334,6 +335,13 @@
     return sign * (h * 60 + mm);
   }
 
+  function formatBreakValue(minutes, mode = S.breakInputMode) {
+    const raw = (typeof minutes === 'number' && Number.isFinite(minutes)) ? minutes : Number(minutes);
+    const safeMin = Number.isFinite(raw) ? raw : 0;
+    if (mode === 'hours') return minToHm(safeMin);
+    return String(safeMin);
+  }
+
   // "Month Year" format
   function monthLabel(dateObj) {
     return MONTH_FMT.format(dateObj);
@@ -402,6 +410,7 @@
   U.hasSelection = hasSelection;
   U.isTimesheetCellField = isTimesheetCellField;
   U.parseBreakMinutesInput = parseBreakMinutesInput;
+  U.formatBreakValue = formatBreakValue;
   U.monthLabel = monthLabel;
   U.toLocalMonthStr = toLocalMonthStr;
   U.firstOfMonth = firstOfMonth;
