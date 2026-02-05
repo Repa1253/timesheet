@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [1.1.3]
+### Added
+- More HR rule options, including priority, break times, and maximum hours.
+- Clearer info boxes in the HR dashboard.
+
+### Improved
+- HR rules now keep each employee group in only one rule to avoid conflicts, with automatic cleanup.
+- HR screens are easier to use, with better spacing, inputs, and responsiveness on different screen sizes.
+
 ## [1.1.2]
 ### Improved
 - HR layout on different screen sizes.
