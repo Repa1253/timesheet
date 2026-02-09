@@ -203,8 +203,8 @@
   // Load entries for the given user and month
   async function loadUserEntries(userId = null, date = new Date()) {
     const { from, to } = U.getMonthRange(date);
-    const fromStr = from.toISOString().slice(0, 10);
-    const toStr   = to.toISOString().slice(0, 10);
+    const fromStr = U.toLocalIsoDate(from);
+    const toStr   = U.toLocalIsoDate(to);
 
     const query   = userId
       ? `/api/entries?user=${encodeURIComponent(userId)}&from=${fromStr}&to=${toStr}`
