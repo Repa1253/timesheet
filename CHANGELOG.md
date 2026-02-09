@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## [1.1.4]
+### Fixed
+- Fixed a date issue that could stop timesheet entries from displaying on the last day of a month.
 
 ## [1.1.3]
 ### Added
