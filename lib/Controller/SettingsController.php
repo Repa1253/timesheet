@@ -5,6 +5,8 @@ namespace OCA\Timesheet\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\IRequest;
 use OCP\IGroupManager;
@@ -200,15 +202,12 @@ class SettingsController extends Controller {
     return new DataResponse(['check' => $checked]);
   }
 
-  /**
-   * @AdminRequired
-   * @CSRFCheck
-   */
+  #[NoAdminRequired]
+  #[NoCSRFRequired]
   public function loadSpecialDaysCheck(): DataResponse {
     $user = $this->userSession->getUser();
-    $uid = $user?->getUID();
-    if (!$uid || !$this->groupManager->isAdmin($uid)) {
-      return new DataResponse(['message' => 'Forbidden'], 403);
+    if (!$user) {
+      return new DataResponse(['message' => 'Unauthorized'], 401);
     }
 
     $raw = $this->appConfig->getAppValueString('specialdays_check', '0');
