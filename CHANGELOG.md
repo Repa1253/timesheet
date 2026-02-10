@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5]
+### Fixes
+- Employees can now access the special-days check in settings without needing admin rights, as long as they are logged in.
+
+### Added
+- German wording was added for HR and employee group access rules.
+
 ## [1.1.4]
 ### Fixed
 - Fixed a date issue that could stop timesheet entries from displaying on the last day of a month.
