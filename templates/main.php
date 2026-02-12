@@ -17,7 +17,7 @@
         <button type="button" id="month-display" class="month-display month-display-btn">Month Year</button>
         <button type="button" class="month-nav" id="month-next">></button>
   
-        <button type="button" id="export-mine-xlsx" class="primary"><?php p($l->t('Export Month')) ?></button>
+        <button type="button" id="export-mine-xlsx" class="primary"><?php p($l->t('Export')) ?></button>
         
         <div class="ts-stats">
           <div><strong><?php p($l->t('Worked (month):')) ?></strong> <span id="worked-hours-month">--:--</span></div>
@@ -240,7 +240,7 @@
         <div class="hr-user-header-bar">
           <button id="hr-back-button" class="hr-back-button"><?php p($l->t('Back')) ?></button>
           <h4 id="hr-user-title"><?php p($l->t('Entries for:')) ?> <span></span></h4>
-          <button type="button" id="export-hr-xlsx" class="primary"><?php p($l->t('Export Month')) ?></button>
+          <button type="button" id="export-hr-xlsx" class="primary"><?php p($l->t('Export')) ?></button>
         </div>
 
         <!-- Monat, Statistik und Konfiguration nebeneinander -->
