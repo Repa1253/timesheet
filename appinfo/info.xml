@@ -31,7 +31,7 @@ Die Zielzeit ist ein einheitlicher Tageswert, wodurch sie sich besonders für kl
 	<screenshot>https://nextcloud-agentur.de/timesheet/timesheet_hrOverview.png</screenshot>
 	<screenshot>https://nextcloud-agentur.de/timesheet/timesheet_englishSupport.png</screenshot>
 
-	<version>1.1.5</version>
+	<version>1.1.6</version>
 	<licence>agpl</licence>
 	<author mail="dgu@xiller.com">David Gun (www.xiller-academy.de)</author>
 	<category>tools</category>
