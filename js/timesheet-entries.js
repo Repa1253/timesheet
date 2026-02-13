@@ -97,11 +97,14 @@
     const startMin = entry?.startMin ?? null;
     const endMin   = entry?.endMin ?? null;
     const brkMin   = entry?.breakMinutes ?? 0;
+    const isIncompleteTime = (startMin != null && endMin == null) || (startMin == null && endMin != null);
 
     const durMin = U.calcWorkMinutes(startMin, endMin, brkMin);
     const diffMin = (durMin == null) ? null : (specialDaysEnabled && (isHoliday || isWeekend) ? durMin : (dailyMin != null ? (durMin - dailyMin) : null));
 
-    const warning = U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap, thresholds);
+    const warning = isIncompleteTime
+      ? t(S.appName, 'Time incomplete')
+      : U.checkRules({ startMin, endMin, breakMinutes: brkMin }, dateStr, holidayMap, thresholds);
 
     const startStr = startMin != null ? U.minToHm(startMin) : '';
     const endStr   = endMin   != null ? U.minToHm(endMin)   : '';
@@ -257,6 +260,18 @@
     if (firstRow) updateWorkedHours(firstRow);
   }
 
+  function clearTimeField(input) {
+    if (!input) return;
+
+    input.value = '';
+    // Force-reset segmented native time-input UI (e.g. "--:00").
+    if (input.type === 'time') {
+      input.type = 'text';
+      input.value = '';
+      input.type = 'time';
+    }
+  }
+
   async function deleteEntryForRow(row) {
     const entryId = row.dataset.id || null;
     if (!entryId) return;
@@ -274,8 +289,8 @@
 
     delete row.dataset.id;
 
-    if (startInput)   startInput.value   = '';
-    if (endInput)     endInput.value     = '';
+    clearTimeField(startInput);
+    clearTimeField(endInput);
     if (breakInput)   breakInput.value   = U.formatBreakValue(0, S.breakInputMode);
     if (commentInput) commentInput.value = '';
 
@@ -299,7 +314,10 @@
 
   // Save the row if there are changes
   async function saveRowIfNeeded(row) {
-    if (row.dataset.saving === '1') return;
+    if (row.dataset.saving === '1') {
+      row.dataset.saveQueued = '1';
+      return;
+    }
 
     const isHr = !!row.closest('#hr-user-entries');
 
@@ -323,7 +341,13 @@
 
     const hasStart = !!startVal;
     const hasEnd   = !!endVal;
+
+    if (!hasStart) clearTimeField(startInput);
+    if (!hasEnd) clearTimeField(endInput);
+
     const hasBothTimes = hasStart && hasEnd;
+    const isEmptyTimes = !hasStart && !hasEnd;
+    const isIncompleteTime = !isEmptyTimes && !hasBothTimes;
 
     const hasId = !!row.dataset.id;
 
@@ -332,12 +356,17 @@
     const savedBreak   = row.dataset.savedBreak != null ? parseInt(row.dataset.savedBreak, 10) : 0;
     const savedComment = String(row.dataset.savedComment ?? '').trim();
 
-    if (!(hasStart || hasEnd) && comment.length === 0) {
+    if (isEmptyTimes && comment.length === 0) {
       if (hasId) {
         row.dataset.saving = '1';
         try { await deleteEntryForRow(row); } 
         catch (error) { console.error('❌ Auto-Delete failed:', error); } 
         finally { delete row.dataset.saving; }
+
+        if (row.dataset.saveQueued === '1') {
+          delete row.dataset.saveQueued;
+          await saveRowIfNeeded(row);
+        }
       } else {
         if (warnCell) warnCell.textContent = '';
         if (durCell)  durCell.textContent  = '--:--';
@@ -346,59 +375,62 @@
       return;
     }
 
-    // Full save: start+end present
-    // Comment-only: comment present, but times NOT complete
-    // Partial time without comment: block
-
-    const isCommentOnly = comment.length > 0 && !hasBothTimes;
-
-    // Block partial time without comment
-    if (!hasBothTimes && !isCommentOnly) {
-      if (warnCell) warnCell.textContent = t(S.appName, 'Time incomplete');
-      return;
-    }
+    // Comment-only: comment present, but NO times
+    // Incomplete: one of start/end present
+    const isCommentOnly = comment.length > 0 && isEmptyTimes;
 
     let breakMin = 0;
 
-    // Full save
+    // Full or partial save
     if (!isCommentOnly) {
       breakMin = U.parseBreakMinutesInput(breakInput.value);
       if (breakMin == null) {
-        breakInput.value = U.formatBreakValue(Number.isFinite(savedBreak) ? savedBreak : 0, S.breakInputMode);
-        return;
-      }
-      breakInput.value = U.formatBreakValue(breakMin, S.breakInputMode);
-
-      const startMin = U.hmToMin(startVal);
-      const endMin   = U.hmToMin(endVal);
-      const duration = U.calcWorkMinutes(startMin, endMin, breakMin);
-
-      let stateCode;
-      if (isHr) {
-        const hrStateInput = document.querySelector('#tab-hr .config-state');
-        stateCode = (hrStateInput?.value);
+        breakMin = Number.isFinite(savedBreak) ? savedBreak : 0;
+        breakInput.value = U.formatBreakValue(breakMin, S.breakInputMode);
+        if (!isIncompleteTime) return;
       } else {
-        const mineStateInput = document.querySelector('#tab-mine .config-state');
-        stateCode = (mineStateInput?.value || S.userConfig?.state);
+        breakInput.value = U.formatBreakValue(breakMin, S.breakInputMode);
       }
 
-      const holidayMap = S.holidayCache.get(`${stateCode}_${workDate.slice(0, 4)}`) || {};
-      const baseDailyMin = getEffectiveDailyMin(isHr ? document.getElementById('hr-user-entries') : null);
-      const diffMin = (duration != null && baseDailyMin != null) ? (duration - baseDailyMin) : null;
+      if (!isIncompleteTime) {
+        const startMin = U.hmToMin(startVal);
+        const endMin   = U.hmToMin(endVal);
+        const duration = U.calcWorkMinutes(startMin, endMin, breakMin);
 
-      const thresholds = getRuleThresholds(isHr ? document.querySelector('#hr-user-title span')?.textContent : S.currentUserId);
-      if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: breakMin }, workDate, holidayMap, thresholds);
-      if (durCell)  durCell.textContent  = U.minToHm(duration);
-      if (diffCell) diffCell.textContent = U.minToHm(diffMin);
+        let stateCode;
+        if (isHr) {
+          const hrStateInput = document.querySelector('#tab-hr .config-state');
+          stateCode = (hrStateInput?.value);
+        } else {
+          const mineStateInput = document.querySelector('#tab-mine .config-state');
+          stateCode = (mineStateInput?.value || S.userConfig?.state);
+        }
 
-      // Check if anything changed
-      if (startVal === savedStart && endVal === savedEnd && breakMin === savedBreak && comment === savedComment) {
-        return;
+        const holidayMap = S.holidayCache.get(`${stateCode}_${workDate.slice(0, 4)}`) || {};
+        const baseDailyMin = getEffectiveDailyMin(isHr ? document.getElementById('hr-user-entries') : null);
+        const diffMin = (duration != null && baseDailyMin != null) ? (duration - baseDailyMin) : null;
+
+        const thresholds = getRuleThresholds(isHr ? document.querySelector('#hr-user-title span')?.textContent : S.currentUserId);
+        if (warnCell) warnCell.textContent = U.checkRules({ startMin, endMin, breakMinutes: breakMin }, workDate, holidayMap, thresholds);
+        if (durCell)  durCell.textContent  = U.minToHm(duration);
+        if (diffCell) diffCell.textContent = U.minToHm(diffMin);
+
+        // Check if anything changed
+        if (startVal === savedStart && endVal === savedEnd && breakMin === savedBreak && comment === savedComment) {
+          return;
+        }
+      } else {
+        if (warnCell) warnCell.textContent = t(S.appName, 'Time incomplete');
+        if (durCell)  durCell.textContent  = '--:--';
+        if (diffCell) diffCell.textContent = '--:--';
+
+        // Check if anything changed
+        if (startVal === savedStart && endVal === savedEnd && breakMin === savedBreak && comment === savedComment) {
+          return;
+        }
       }
-    // Comment-only save
     } else {
-      // Show warning for incomplete time
-      if (warnCell) warnCell.textContent = (hasStart || hasEnd) ? t(S.appName, 'Time incomplete') : '';
+      if (warnCell) warnCell.textContent = '';
 
       // Check if anything changed
       if (!(savedStart !== '' || savedEnd !== '' || (Number.isFinite(savedBreak) ? savedBreak : 0) !== 0) && comment === savedComment) {
@@ -435,8 +467,8 @@
       }
 
       if (isCommentOnly) {
-        if (startInput) startInput.value = '';
-        if (endInput)   endInput.value   = '';
+        clearTimeField(startInput);
+        clearTimeField(endInput);
         if (breakInput) breakInput.value = U.formatBreakValue(0, S.breakInputMode);
         if (warnCell)   warnCell.textContent = '';
         if (durCell)    durCell.textContent  = '--:--';
@@ -465,6 +497,11 @@
       console.error('❌ Auto-Save failed:', error);
     } finally {
       delete row.dataset.saving;
+
+      if (row.dataset.saveQueued === '1') {
+        delete row.dataset.saveQueued;
+        await saveRowIfNeeded(row);
+      }
     }
   }
 

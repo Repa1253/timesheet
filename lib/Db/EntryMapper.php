@@ -101,7 +101,7 @@ class EntryMapper extends QBMapper {
     return $qb->executeQuery()->fetchAll();
   }
 
-  public function calculateOvertimeAggregate(string $userId, bool $excludeSpecialDays): ?array {
+  public function calculateOvertimeAggregate(string $userId, bool $excludeSpecialDays = false): ?array {
     $qb = $this->db->getQueryBuilder();
 
     $deltaExpr = '((CASE WHEN end_min < start_min THEN end_min + 1440 ELSE end_min END) - start_min - COALESCE(break_minutes, 0))';
@@ -120,6 +120,8 @@ class EntryMapper extends QBMapper {
       ->from('ts_entries');
 
     $qb->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+    $qb->andWhere($qb->expr()->isNotNull('start_min'));
+    $qb->andWhere($qb->expr()->isNotNull('end_min'));
     $qb->groupBy('user_id');
 
     $row = $qb->executeQuery()->fetch();
@@ -162,6 +164,8 @@ class EntryMapper extends QBMapper {
       ->selectAlias($qb->createFunction($totalWorkdaysExpr), 'total_workdays')
       ->from('ts_entries')
       ->where($qb->expr()->in('user_id', $qb->createNamedParameter($userIds, IQueryBuilder::PARAM_STR_ARRAY)))
+      ->andWhere($qb->expr()->isNotNull('start_min'))
+      ->andWhere($qb->expr()->isNotNull('end_min'))
       ->groupBy('user_id');
 
     $rows = $qb->executeQuery()->fetchAll();
@@ -200,6 +204,8 @@ class EntryMapper extends QBMapper {
       ->where($qb->expr()->in('user_id', $qb->createNamedParameter($userIds, IQueryBuilder::PARAM_STR_ARRAY)))
       ->andWhere($qb->expr()->gte('work_date', $qb->createNamedParameter($fromYmd)))
       ->andWhere($qb->expr()->lte('work_date', $qb->createNamedParameter($toYmd)))
+      ->andWhere($qb->expr()->isNotNull('start_min'))
+      ->andWhere($qb->expr()->isNotNull('end_min'))
       ->groupBy('user_id');
 
     $rows = $qb->executeQuery()->fetchAll();
