@@ -42,17 +42,6 @@ Die Zielzeit ist ein einheitlicher Tageswert, wodurch sie sich besonders für kl
 		<nextcloud min-version="30" max-version="32"/>
 	</dependencies>
 
-	<navigations>
-    <navigation>
-      <id>timesheet</id>
-      <name>Timesheet</name>
-      <route>timesheet.page.index</route>
-      <order>10</order>
-      <icon>app.svg</icon>
-      <type>link</type>
-    </navigation>
-  </navigations>
-
 	<settings>
 		<admin>OCA\Timesheet\Settings\AdminSettings</admin>
 		<admin-section>OCA\Timesheet\Settings\AdminSection</admin-section>
