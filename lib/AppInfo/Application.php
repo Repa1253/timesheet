@@ -7,6 +7,9 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\BackgroundJob\IJobList;
+use OCP\INavigationManager;
+use OCP\IURLGenerator;
+use OCP\L10N\IFactory;
 use OCA\Timesheet\BackgroundJob\HrNotificationJob;
 
 class Application extends App implements IBootstrap {
@@ -26,6 +29,21 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function boot(IBootContext $context): void {
+		$context->injectFn(function (INavigationManager $navigationManager, IURLGenerator $urlGenerator, IFactory $l10nFactory) {
+			$appId = self::APP_ID;
+			$navigationManager->add(function () use ($appId, $urlGenerator, $l10nFactory) {
+				$l = $l10nFactory->get($appId);
+				return [
+					'id' => $appId,
+					'order' => 10,
+					'href' => $urlGenerator->linkToRoute($appId . '.page.index'),
+					'icon' => $urlGenerator->imagePath($appId, 'app.svg'),
+					'name' => $l->t('Timesheet'),
+					'app' => $appId,
+				];
+			});
+		});
+
 		$server = $context->getServerContainer();
 
 		/** @var IJobList $jobList */

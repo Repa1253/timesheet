@@ -34,6 +34,8 @@ OC.L10N.register(
     "timesheet": "Stundenzettel",
     "Copied to clipboard": "In die Zwischenablage kopiert",
     "No entry for more than": "Kein Eintrag für mehr als",
+    "Month export": "Monat exportieren",
+    "Year export": "Jahr exportieren",
 
     // admin.js translations
     "No rules yet. Add one to restrict HR access based on groups.": "Noch keine Regeln. Fügen Sie eine hinzu, um den HR-Zugriff basierend auf Gruppen einzuschränken.",

@@ -31,7 +31,7 @@ Die Zielzeit ist ein einheitlicher Tageswert, wodurch sie sich besonders für kl
 	<screenshot>https://nextcloud-agentur.de/timesheet/timesheet_hrOverview.png</screenshot>
 	<screenshot>https://nextcloud-agentur.de/timesheet/timesheet_englishSupport.png</screenshot>
 
-	<version>1.1.5</version>
+	<version>1.1.6</version>
 	<licence>agpl</licence>
 	<author mail="dgu@xiller.com">David Gun (www.xiller-academy.de)</author>
 	<category>tools</category>
@@ -41,17 +41,6 @@ Die Zielzeit ist ein einheitlicher Tageswert, wodurch sie sich besonders für kl
 		<php min-version="8.1"/>
 		<nextcloud min-version="30" max-version="32"/>
 	</dependencies>
-
-	<navigations>
-    <navigation>
-      <id>timesheet</id>
-      <name>Timesheet</name>
-      <route>timesheet.page.index</route>
-      <order>10</order>
-      <icon>app.svg</icon>
-      <type>link</type>
-    </navigation>
-  </navigations>
 
 	<settings>
 		<admin>OCA\Timesheet\Settings\AdminSettings</admin>

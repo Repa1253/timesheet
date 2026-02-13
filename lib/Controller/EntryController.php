@@ -78,17 +78,29 @@ class EntryController extends Controller {
     $commentOnly = ((int)$this->request->getParam('commentOnly', 0) === 1);
     $commentTrim = trim((string)($comment ?? ''));
 
+    $startRaw = trim((string)($start ?? ''));
+    $endRaw = trim((string)($end ?? ''));
+
     $startMin = self::hmToMinNullable($start);
     $endMin   = self::hmToMinNullable($end);
-    $timesComplete = ($startMin !== null && $endMin !== null);
 
-    if ($commentOnly || (!$timesComplete && $commentTrim !== '')) {
+    if ($startRaw !== '' && $startMin === null) {
+      return new DataResponse(['error' => 'Invalid start time'], 400);
+    }
+    if ($endRaw !== '' && $endMin === null) {
+      return new DataResponse(['error' => 'Invalid end time'], 400);
+    }
+
+    $hasStart = ($startMin !== null);
+    $hasEnd = ($endMin !== null);
+
+    if ($commentOnly || (!$hasStart && !$hasEnd && $commentTrim !== '')) {
       $entry = $this->entryMapper->upsertCommentOnly($targetUid, $workDate, $commentTrim);
       return new DataResponse($entry);
     }
 
-    if (!$timesComplete) {
-      throw new DataResponse(['error' => 'Time incomplete'], 400);
+    if (!$hasStart && !$hasEnd) {
+      return new DataResponse(['error' => 'Time incomplete'], 400);
     }
 
     $payload = [
@@ -136,26 +148,25 @@ class EntryController extends Controller {
       return $this->updateEntryWithConflictHandling($id, $data);
     }
 
-    $startMin = self::hmToMinNullable($start);
-    $endMin   = self::hmToMinNullable($end);
-    $timesTouched = ($start !== null || $end !== null);
-
-    // If times are incomplete, and comment is present, clear times and set comment only
-    if ($timesTouched && ($startMin === null || $endMin === null) && $commentTrim !== '') {
-      $data['startMin'] = null;
-      $data['endMin'] = null;
-      $data['breakMinutes'] = 0;
-      $data['comment'] = $commentTrim;
-      return $this->updateEntryWithConflictHandling($id, $data);
-    }
-
     if ($start !== null) {
-      if ($startMin === null) return new DataResponse(['error' => 'Invalid start time'], 400);
-      $data['startMin'] = $startMin;
+      $startTrim = trim((string)$start);
+      if ($startTrim === '') {
+        $data['startMin'] = null;
+      } else {
+        $startMin = self::hmToMinNullable($startTrim);
+        if ($startMin === null) return new DataResponse(['error' => 'Invalid start time'], 400);
+        $data['startMin'] = $startMin;
+      }
     }
     if ($end !== null) {
-      if ($endMin === null) return new DataResponse(['error' => 'Invalid end time'], 400);
-      $data['endMin'] = $endMin;
+      $endTrim = trim((string)$end);
+      if ($endTrim === '') {
+        $data['endMin'] = null;
+      } else {
+        $endMin = self::hmToMinNullable($endTrim);
+        if ($endMin === null) return new DataResponse(['error' => 'Invalid end time'], 400);
+        $data['endMin'] = $endMin;
+      }
     }
     if ($breakMinutes !== null) $data['breakMinutes'] = $breakMinutes;
     if ($comment !== null) $data['comment'] = $comment;

@@ -25,8 +25,8 @@ class EntryService {
 
     $entry->setUserId($userId);
     $entry->setWorkDate($workDate);
-    $entry->setStartMin((int)$data['startMin']);
-    $entry->setEndMin((int)$data['endMin']);
+    $entry->setStartMin(array_key_exists('startMin', $data) ? $data['startMin'] : null);
+    $entry->setEndMin(array_key_exists('endMin', $data) ? $data['endMin'] : null);
     $entry->setBreakMinutes((int)($data['breakMinutes'] ?? 0));
     $entry->setComment($data['comment'] ?? null);
     $entry->setCreatedAt(time());

@@ -354,16 +354,6 @@
     return `${year}-${month}`;
   }
 
-  // Set to first day of month
-  function firstOfMonth(dateObj) {
-    return new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
-  }
-
-  // Add months, set to first day of month
-  function addMonths(dateObj, delta) {
-    return new Date(dateObj.getFullYear(), dateObj.getMonth() + delta, 1);
-  }
-
   // API utility
   async function api(path, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();
@@ -413,8 +403,6 @@
   U.formatBreakValue = formatBreakValue;
   U.monthLabel = monthLabel;
   U.toLocalMonthStr = toLocalMonthStr;
-  U.firstOfMonth = firstOfMonth;
-  U.addMonths = addMonths;
   U.ensureWriteAllowed = ensureWriteAllowed;
   TS.api = api;
   U.RULE_DEFAULTS = RULE_DEFAULTS;

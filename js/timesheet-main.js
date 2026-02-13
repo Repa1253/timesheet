@@ -174,13 +174,18 @@
       input.value = U.formatBreakValue(parsed, mode);
     });
   }
-
   function updateBreakToggleUI(mode) {
+    const isHours = mode === 'hours';
     document.querySelectorAll('.ts-break-toggle').forEach(toggle => {
-      toggle.querySelectorAll('.ts-break-toggle-btn').forEach(btn => {
-        const active = btn.dataset.breakMode === mode;
-        btn.classList.toggle('is-active', active);
-        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      const switchInput = toggle.querySelector('.ts-break-toggle-switch');
+      if (switchInput) {
+        switchInput.checked = isHours;
+        switchInput.setAttribute('aria-checked', isHours ? 'true' : 'false');
+      }
+
+      toggle.querySelectorAll('.ts-break-mode-option').forEach(label => {
+        const active = label.dataset.breakModeLabel === mode;
+        label.classList.toggle('is-active', active);
       });
     });
   }
@@ -193,15 +198,21 @@
   }
 
   function bindBreakToggle() {
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('.ts-break-toggle-btn');
-      if (!btn) return;
-      setBreakMode(btn.dataset.breakMode);
+    document.addEventListener('change', (e) => {
+      const el = e.target;
+      if (!(el instanceof Element)) return;
+
+      const input = el.closest('.ts-break-toggle-switch');
+      if (!input) return;
+
+      const mode = input.checked
+        ? (input.dataset.breakModeOn || 'hours')
+        : (input.dataset.breakModeOff || 'minutes');
+      setBreakMode(mode);
     });
 
     setBreakMode(S.breakInputMode || 'minutes');
   }
-
   // Auto-grow textarea function
   function autogrowTextarea(textarea) {
     textarea.style.height = '21px';
