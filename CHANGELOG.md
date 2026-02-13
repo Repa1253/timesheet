@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.6]
+### Improved
+- Entering times is now smoother: if only a start or end time is filled, you get clearer feedback and can still save your progress.
+- Clearing time fields works more reliably, so fields are fully reset when removed.
+- Saving entries is more stable during quick edits, reducing issues when multiple saves happen close together.
+- The break mode switch was redesigned for a cleaner, more modern look and easier use.
+- Export options are now clearer and better aligned, with improved input styling for a more consistent interface.
+
 ## [1.1.5]
 ### Fixes
 - Employees can now access the special-days check in settings without needing admin rights, as long as they are logged in.
