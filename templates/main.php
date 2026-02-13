@@ -78,8 +78,20 @@
 
     <div class="ts-break-toggle" id="ts-break-toggle" role="group" aria-label="<?php p($l->t('Break input format')) ?>">
       <span class="ts-break-toggle-label"><?php p($l->t('Break')) ?>:</span>
-      <button type="button" class="ts-break-toggle-btn is-active" data-break-mode="minutes" aria-pressed="true"><?php p($l->t('Minutes')) ?></button>
-      <button type="button" class="ts-break-toggle-btn" data-break-mode="hours" aria-pressed="false"><?php p($l->t('Hours')) ?></button>
+      <span class="ts-break-mode-option is-active" data-break-mode-label="minutes"><?php p($l->t('Minutes')) ?></span>
+      <label class="ts-break-switch">
+        <input
+          type="checkbox"
+          class="ts-break-toggle-switch"
+          role="switch"
+          data-break-mode-off="minutes"
+          data-break-mode-on="hours"
+          aria-label="<?php p($l->t('Break input format')) ?>"
+          aria-checked="false"
+        >
+        <span class="ts-break-switch-slider" aria-hidden="true"></span>
+      </label>
+      <span class="ts-break-mode-option" data-break-mode-label="hours"><?php p($l->t('Hours')) ?></span>
     </div>
   </div>
 
@@ -308,8 +320,20 @@
 
         <div class="ts-break-toggle" id="ts-break-toggle-hr" role="group" aria-label="<?php p($l->t('Break input format')) ?>">
           <span class="ts-break-toggle-label"><?php p($l->t('Break')) ?>:</span>
-          <button type="button" class="ts-break-toggle-btn is-active" data-break-mode="minutes" aria-pressed="true"><?php p($l->t('Minutes')) ?></button>
-          <button type="button" class="ts-break-toggle-btn" data-break-mode="hours" aria-pressed="false"><?php p($l->t('Hours')) ?></button>
+          <span class="ts-break-mode-option is-active" data-break-mode-label="minutes"><?php p($l->t('Minutes')) ?></span>
+          <label class="ts-break-switch">
+            <input
+              type="checkbox"
+              class="ts-break-toggle-switch"
+              role="switch"
+              data-break-mode-off="minutes"
+              data-break-mode-on="hours"
+              aria-label="<?php p($l->t('Break input format')) ?>"
+              aria-checked="false"
+            >
+            <span class="ts-break-switch-slider" aria-hidden="true"></span>
+          </label>
+          <span class="ts-break-mode-option" data-break-mode-label="hours"><?php p($l->t('Hours')) ?></span>
         </div>
       </div>
     </div>
