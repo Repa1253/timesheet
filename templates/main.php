@@ -135,20 +135,20 @@
                 <td id="hr-stat-total-hours">-</td>
               </tr>
               <tr>
-                <th><?php p($l->t('Total overtime')); ?></th>
-                <td id="hr-stat-total-overtime">-</td>
-              </tr>
-              <tr>
                 <th><?php p($l->t('Employees with overtime')); ?></th>
                 <td id="hr-stat-employees-overtime">-</td>
               </tr>
               <tr>
-                <th><?php p($l->t('Total negative overtime')); ?></th>
-                <td id="hr-stat-total-negative">-</td>
-              </tr>
-              <tr>
                 <th><?php p($l->t('Employees with negative overtime')); ?></th>
                 <td id="hr-stat-employees-negative">-</td>
+              </tr>
+              <tr>
+                <th><?php p($l->t('Total overtime')); ?></th>
+                <td id="hr-stat-total-overtime">-</td>
+              </tr>
+              <tr>
+                <th><?php p($l->t('Total negative overtime')); ?></th>
+                <td id="hr-stat-total-negative">-</td>
               </tr>
               <tr>
                 <th><?php p($l->t('Sum of +/- overtimes')); ?></th>
