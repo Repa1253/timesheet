@@ -30,7 +30,7 @@ class EntryMapper extends QBMapper {
       ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
       ->andWhere($qb->expr()->eq('work_date', $qb->createNamedParameter($workDate)))
       ->setMaxResults(1);
-    
+
     try {
       return $this->findEntity($qb);
     } catch (DoesNotExistException $e) {
@@ -38,11 +38,6 @@ class EntryMapper extends QBMapper {
     }
   }
 
-  /**
-   * Create/Update entry with comment only.
-   * If entry exists: update comment only
-   * If not: create new entry with NULL times and 0 break
-   */
   public function upsertCommentOnly(string $userId, string $workDate, string $comment): Entry {
     $existingEntry = $this->findByUserAndDate($userId, $workDate);
     $now = time();
@@ -102,6 +97,10 @@ class EntryMapper extends QBMapper {
   }
 
   public function calculateOvertimeAggregate(string $userId, bool $excludeSpecialDays = false): ?array {
+    return $this->calculateWorkAggregateForRange($userId, null, null, $excludeSpecialDays);
+  }
+
+  public function calculateWorkAggregateForRange(string $userId, ?string $fromYmd, ?string $toYmd, bool $excludeSpecialDays = false): ?array {
     $qb = $this->db->getQueryBuilder();
 
     $deltaExpr = '((CASE WHEN end_min < start_min THEN end_min + 1440 ELSE end_min END) - start_min - COALESCE(break_minutes, 0))';
@@ -117,15 +116,21 @@ class EntryMapper extends QBMapper {
       ->selectAlias($qb->createFunction('MAX(`work_date`)'), 'max_date')
       ->selectAlias($qb->createFunction($totalMinutesExpr), 'total_minutes')
       ->selectAlias($qb->createFunction($totalWorkdaysExpr), 'total_workdays')
-      ->from('ts_entries');
+      ->from('ts_entries')
+      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
+      ->andWhere($qb->expr()->isNotNull('start_min'))
+      ->andWhere($qb->expr()->isNotNull('end_min'));
 
-    $qb->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
-    $qb->andWhere($qb->expr()->isNotNull('start_min'));
-    $qb->andWhere($qb->expr()->isNotNull('end_min'));
+    if ($fromYmd !== null) {
+      $qb->andWhere($qb->expr()->gte('work_date', $qb->createNamedParameter($fromYmd)));
+    }
+    if ($toYmd !== null) {
+      $qb->andWhere($qb->expr()->lte('work_date', $qb->createNamedParameter($toYmd)));
+    }
+
     $qb->groupBy('user_id');
 
     $row = $qb->executeQuery()->fetch();
-    
     if (!$row || !$row['min_date']) {
       return null;
     }
@@ -133,8 +138,8 @@ class EntryMapper extends QBMapper {
     return [
       'from'          => $row['min_date'],
       'to'            => $row['max_date'],
-      'totalMinutes'  => (int) $row['total_minutes'],
-      'totalWorkdays' => (int) $row['total_workdays'],
+      'totalMinutes'  => (int)$row['total_minutes'],
+      'totalWorkdays' => (int)$row['total_workdays'],
     ];
   }
 
@@ -221,6 +226,19 @@ class EntryMapper extends QBMapper {
       $out[$uid] = $last;
     }
     return $out;
+  }
+
+  public function getLastEntryDateForUser(string $userId): ?string {
+    $qb = $this->db->getQueryBuilder();
+    $qb->selectAlias($qb->createFunction('MAX(`work_date`)'), 'last_date')
+      ->from($this->getTableName())
+      ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
+      ->andWhere($qb->expr()->isNotNull('start_min'))
+      ->andWhere($qb->expr()->isNotNull('end_min'));
+
+    $row = $qb->executeQuery()->fetch();
+    $last = is_array($row) ? (string)($row['last_date'] ?? '') : '';
+    return $last !== '' ? $last : null;
   }
 
   public function countWorkdaysOnDates(string $userId, array $ymdDates): int {

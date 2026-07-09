@@ -16,6 +16,9 @@ return [
     ['name' => 'overview#getHrUserListData',  'url' => '/api/hr/userlist',      'verb' => 'GET'],
     ['name' => 'overview#getOvertimeSummary', 'url' => '/api/overtime/summary', 'verb' => 'GET'],
 
+    // REST: automatic balance snapshots
+    ['name' => 'balance#getMonth', 'url' => '/api/balances/{userId}/{year}/{month}', 'verb' => 'GET'],
+
     // REST: User config 
     ['name' => 'config#getUserConfig', 'url' => '/api/hr/config/{userId}', 'verb' => 'GET'],
     ['name' => 'config#setUserConfig', 'url' => '/api/hr/config/{userId}', 'verb' => 'PUT'],
@@ -36,3 +39,4 @@ return [
     ['name' => 'settings#loadSpecialDaysCheck', 'url' => '/settings/specialdays_check', 'verb' => 'GET'],
   ],
 ];
+

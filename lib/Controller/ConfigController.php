@@ -43,6 +43,7 @@ class ConfigController extends Controller {
     private HrService $hrService,
     private UserConfigMapper $userConfigMapper,
     private GroupRuleService $groupRuleService,
+    private \OCA\Timesheet\Service\MonthlyBalanceService $monthlyBalanceService,
   ) {
     parent::__construct($appName, $request);
     $this->userSession  = $userSession;
@@ -72,7 +73,19 @@ class ConfigController extends Controller {
   */
   public function setUserConfig(string $userId, int $dailyMin, string $state): DataResponse {
     $this->assertConfigAccess($userId);
+    $old = $this->userConfigMapper->getConfigData($userId);
     $data = $this->userConfigMapper->upsertConfigData($userId, $dailyMin, $state);
+
+    $oldDaily = isset($old['dailyMin']) ? (int)$old['dailyMin'] : null;
+    $oldState = trim((string)($old['state'] ?? ''));
+    if ($oldState === 'null') $oldState = '';
+    $newState = trim((string)$state);
+    if ($newState === 'null') $newState = '';
+
+    if ($oldDaily !== (int)$dailyMin || $oldState !== $newState) {
+      $this->monthlyBalanceService->markAllDirtyForUser($userId);
+    }
+
     return new DataResponse($data, Http::STATUS_OK);
   }
 

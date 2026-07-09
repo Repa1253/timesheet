@@ -29,6 +29,7 @@ class SettingsController extends Controller {
     private IAppConfig $appConfig,
     private IGroupManager $groupManager,
     private IUserSession $userSession,
+    private \OCA\Timesheet\Service\MonthlyBalanceService $monthlyBalanceService,
   ) {
     parent::__construct($appName, $request);
   }
@@ -197,7 +198,11 @@ class SettingsController extends Controller {
     $raw = (string)$this->request->getParam('specialDaysCheck', 'false');
     $checked = filter_var($raw, FILTER_VALIDATE_BOOLEAN);
 
+    $old = $this->appConfig->getAppValueString('specialdays_check', '0') === '1';
     $this->appConfig->setAppValueString('specialdays_check', $checked ? '1' : '0');
+    if ($old !== $checked) {
+      $this->monthlyBalanceService->markAllDirty();
+    }
 
     return new DataResponse(['check' => $checked]);
   }

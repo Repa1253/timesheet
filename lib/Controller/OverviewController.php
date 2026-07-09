@@ -15,6 +15,7 @@ use OCA\Timesheet\Db\EntryMapper;
 use OCA\Timesheet\Db\UserConfigMapper;
 use OCA\Timesheet\Service\HrService;
 use OCA\Timesheet\Service\HolidayService;
+use OCA\Timesheet\Service\MonthlyBalanceService;
 
 class OverviewController extends Controller {
 
@@ -27,6 +28,7 @@ class OverviewController extends Controller {
     private IUserSession $userSession,
     private HrService $hrService,
     private HolidayService $holidayService,
+    private MonthlyBalanceService $monthlyBalanceService,
   ) {
     parent::__construct($appName, $request);
   }
@@ -60,70 +62,19 @@ class OverviewController extends Controller {
       return new JSONResponse(['error' => 'Forbidden'], 403);
     }
 
-    $dailyMin = 480;
-    $state = null;
-    try {
-      $cfg = $this->userConfigMapper->findByUser($userId);
-      $dailyMin = $cfg?->getWorkMinutes() ?? 480;
-      $state = $cfg?->getState() ?? null;
-    } catch (DoesNotExistException $e) {
-      // Use defaults
-    }
-
-    $excludeSpecialDays = $this->appConfig->getAppValueString('specialdays_check', '0') === '1';
-    $agg = $this->entryMapper->calculateOvertimeAggregate($userId, $excludeSpecialDays);
-
-    if (!$agg) {
-      $today = (new \DateTimeImmutable())->format('Y-m-d');
-      return new JSONResponse([
-        'from' => $today,
-        'to' => $today,
-        'totalMinutes' => 0,
-        'totalWorkdays' => 0,
-        'dailyMin' => $dailyMin,
-        'overtimeMinutes' => 0,
-      ]);
-    }
-
-    $effectiveWorkdays = (int)$agg['totalWorkdays'];
-
-    if ($excludeSpecialDays && !empty($state)) {
-      $from = (string)$agg['from'];
-      $to   = (string)$agg['to'];
-
-      $fromYear = (int)substr($from, 0, 4);
-      $toYear   = (int)substr($to, 0, 4);
-
-      $holidayDates = [];
-
-      try {
-        for ($year = $fromYear; $year <= $toYear; $year++) {
-          $yearHolidays = $this->holidayService->getHolidays($year, $state);
-          foreach ($yearHolidays as $date => $_name) {
-            if ($date >= $from && $date <= $to) {
-              $holidayDates[$date] = true;
-            }
-          }
-        }
-      } catch (\Throwable $e) {
-        $holidayDates = [];
-      }
-
-      if ($holidayDates) {
-        $holidayWorkdays = $this->entryMapper->countWorkdaysOnDates($userId, array_keys($holidayDates));
-        $effectiveWorkdays = max(0, $effectiveWorkdays - $holidayWorkdays);
-      }
-    }
-
-    $overtime = $agg['totalMinutes'] - ($effectiveWorkdays * $dailyMin);
+    $summary = $this->monthlyBalanceService->calculateCurrentBalance($userId);
 
     return new JSONResponse([
-      'from' => $agg['from'],
-      'to'   => $agg['to'],
-      'totalMinutes' => $agg['totalMinutes'],
-      'totalWorkdays' => $effectiveWorkdays,
-      'dailyMin' => $dailyMin,
-      'overtimeMinutes' => $overtime,
+      'from' => $summary['from'],
+      'to'   => $summary['to'],
+      'totalMinutes' => $summary['totalMinutes'],
+      'totalWorkdays' => $summary['totalWorkdays'],
+      'targetMinutes' => $summary['targetMinutes'],
+      'dailyMin' => $summary['dailyMin'],
+      'openingBalanceMinutes' => $summary['openingBalanceMinutes'],
+      'overtimeMinutes' => $summary['overtimeMinutes'],
+      'source' => $summary['source'],
+      'lastSnapshot' => $summary['lastSnapshot'],
     ]);
   }
 
@@ -145,74 +96,22 @@ class OverviewController extends Controller {
       return new DataResponse([]);
     }
 
-    $configs = $this->userConfigMapper->getConfigDataForUsers($userIds);
-
-    $excludeSpecialDays = $this->appConfig->getAppValueString('specialdays_check', '0') === '1';
-    $aggregates = $this->entryMapper->calculateOvertimeAggregatesForUsers($userIds, $excludeSpecialDays);
-
-    $today = new \DateTimeImmutable('today');
-    $fromDate = $today->modify('-6 months')->format('Y-m-d');
-    $toDate = $today->format('Y-m-d');
-    $lastEntryDates = $this->entryMapper->getLastEntryDatesForUsers($userIds, $fromDate, $toDate);
-
-    $holidaysByYear = [];
     $out = [];
 
     foreach ($users as $user) {
       $uid = (string)($user['id'] ?? '');
       if ($uid === '') continue;
 
-      $cfg = $configs[$uid] ?? ['dailyMin' => null, 'state' => null];
-      $dailyMin = isset($cfg['dailyMin']) ? (int)$cfg['dailyMin'] : 480;
-      if ($dailyMin <= 0) $dailyMin = 480;
-      $state = isset($cfg['state']) ? (string)$cfg['state'] : '';
-
-      $agg = $aggregates[$uid] ?? null;
-      $totalMinutes = $agg['totalMinutes'] ?? 0;
-      $effectiveWorkdays = $agg['totalWorkdays'] ?? 0;
-
-      if ($agg && $excludeSpecialDays && $state !== '') {
-        $from = (string)($agg['from'] ?? '');
-        $to   = (string)($agg['to'] ?? '');
-
-        if ($from !== '' && $to !== '') {
-          $fromYear = (int)substr($from, 0, 4);
-          $toYear   = (int)substr($to, 0, 4);
-
-          $holidayDates = [];
-          try {
-            for ($year = $fromYear; $year <= $toYear; $year++) {
-              $cacheKey = $state . ':' . $year;
-              if (!array_key_exists($cacheKey, $holidaysByYear)) {
-                $holidaysByYear[$cacheKey] = $this->holidayService->getHolidays($year, $state);
-              }
-              $yearHolidays = $holidaysByYear[$cacheKey];
-              foreach ($yearHolidays as $date => $_name) {
-                if ($date >= $from && $date <= $to) {
-                  $holidayDates[$date] = true;
-                }
-              }
-            }
-          } catch (\Throwable $e) {
-            $holidayDates = [];
-          }
-
-          if ($holidayDates) {
-            $holidayWorkdays = $this->entryMapper->countWorkdaysOnDates($uid, array_keys($holidayDates));
-            $effectiveWorkdays = max(0, $effectiveWorkdays - $holidayWorkdays);
-          }
-        }
-      }
-
-      $overtimeMinutes = (int)$totalMinutes - ($effectiveWorkdays * $dailyMin);
-
+      $summary = $this->monthlyBalanceService->calculateCurrentBalance($uid);
       $out[] = [
         'id' => $uid,
         'name' => $user['name'] ?? $uid,
-        'dailyMin' => $dailyMin,
-        'overtimeMinutes' => $overtimeMinutes,
-        'totalMinutes' => $totalMinutes,
-        'lastEntryDate' => $lastEntryDates[$uid] ?? null,
+        'dailyMin' => (int)$summary['dailyMin'],
+        'overtimeMinutes' => (int)$summary['overtimeMinutes'],
+        'totalMinutes' => (int)$summary['totalMinutes'],
+        'lastEntryDate' => $summary['lastEntryDate'] ?? null,
+        'balanceSource' => $summary['source'] ?? 'entries',
+        'lastSnapshot' => $summary['lastSnapshot'] ?? null,
       ];
     }
 

@@ -258,6 +258,7 @@
 
     const firstRow = body.querySelector('tr');
     if (firstRow) updateWorkedHours(firstRow);
+    await refreshMonthlyBalanceStatus(userId || S.currentUserId, date, userId ? document.getElementById('hr-user-entries') : document);
   }
 
   function clearTimeField(input) {
@@ -505,6 +506,20 @@
     }
   }
 
+  function getMonthParts(date) {
+    return { year: date.getFullYear(), month: date.getMonth() + 1 };
+  }
+
+  async function refreshMonthlyBalanceStatus(userId, date, container = document) {
+    if (!userId || !date) return;
+    const { year, month } = getMonthParts(date);
+    try {
+      await TS.api(`/api/balances/${encodeURIComponent(userId)}/${year}/${month}`);
+    } catch (error) {
+      console.warn('Failed to refresh balance snapshot:', error);
+    }
+  }
+
   async function loadSpecialDaysCheck() {
     if (S.specialDaysCheckValue != null) return S.specialDaysCheckValue;
     if (S.specialDaysCheckPromise) return S.specialDaysCheckPromise;
@@ -534,6 +549,7 @@
   EN.getRuleThresholds = getRuleThresholds;
   EN.updateWorkedHours = updateWorkedHours;
   EN.refreshOvertimeTotal = refreshOvertimeTotal;
+  EN.refreshMonthlyBalanceStatus = refreshMonthlyBalanceStatus;
   EN.deleteEntryForRow = deleteEntryForRow;
   EN.saveRowIfNeeded = saveRowIfNeeded;
 })();

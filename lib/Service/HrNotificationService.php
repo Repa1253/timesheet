@@ -19,7 +19,8 @@ class HrNotificationService {
   public function __construct(
     private EntryMapper $entryMapper,
     private UserConfigMapper $userConfigMapper,
-    private HrService $hrService
+    private HrService $hrService,
+    private MonthlyBalanceService $monthlyBalanceService
   ) {}
   
   public function doCron(): array {
@@ -73,11 +74,11 @@ class HrNotificationService {
         $userName = (string)($userInfo['name'] ?? $userId);
 
         if (!array_key_exists($userId, $this->overtimeCache)) {
-          $this->overtimeCache[$userId] = $this->entryMapper->calculateOvertimeAggregate($userId);
+          $this->overtimeCache[$userId] = $this->monthlyBalanceService->calculateCurrentBalance($userId);
         }
         $agg = $this->overtimeCache[$userId];
 
-        $lastEntryDate = ($agg && isset($agg['to'])) ? (string)$agg['to'] : null;
+        $lastEntryDate = ($agg && isset($agg['lastEntryDate'])) ? (string)$agg['lastEntryDate'] : (($agg && isset($agg['to'])) ? (string)$agg['to'] : null);
 
         $daysSince = null;
         if ($lastEntryDate) {
@@ -96,23 +97,7 @@ class HrNotificationService {
 
         if (!$agg) continue;
 
-        if (!array_key_exists($userId, $this->dailyMinCache)) {
-          $daily = self::DEFAULT_WORK_MINUTES;
-          try {
-            $userCfg = $this->userConfigMapper->findByUser($userId);
-            $wm = (int)($userCfg->getWorkMinutes() ?? self::DEFAULT_WORK_MINUTES);
-            $daily = $wm > 0 ? $wm : self::DEFAULT_WORK_MINUTES;
-          } catch (DoesNotExistException) {
-            // use default
-          }
-          $this->dailyMinCache[$userId] = $daily;
-        }
-        $dailyMinutes = (int)$this->dailyMinCache[$userId];
-
-        $totalMinutes = (int)($agg['totalMinutes'] ?? 0);
-        $totalWorkdays = (int)($agg['totalWorkdays'] ?? 0);
-
-        $overtimeMinutes = $totalMinutes - ($totalWorkdays * $dailyMinutes);
+        $overtimeMinutes = (int)($agg['overtimeMinutes'] ?? 0);
 
         if ($overtimeEnabled && $overtimeMinutes > $overtimeThresholdMin) {
           $hrData['overtime'][] = [

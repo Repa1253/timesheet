@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0]
+### Added
+- Balances are now prepared and stored automatically in the background when monthly views or summaries are opened.
+
+### Improved
+- Long-term overtime balances should load faster over time, especially for users with many historic entries.
+
+### Compatibility
+- Added support metadata for Nextcloud 33.
+- Raised the PHP requirement to 8.2 because Nextcloud 33 no longer supports PHP 8.1.
+
 ## [1.1.6]
 ### Improved
 - Entering times is now smoother: if only a start or end time is filled, you get clearer feedback and can still save your progress.

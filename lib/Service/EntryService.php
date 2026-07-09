@@ -9,7 +9,8 @@ use OCP\IUserSession;
 class EntryService {
   public function __construct(
     private EntryMapper $mapper,
-    private IUserSession $userSession
+    private IUserSession $userSession,
+    private MonthlyBalanceService $monthlyBalanceService,
   ) {}
 
   public function create(array $data, ?string $forceUserId = null): Entry {
@@ -32,12 +33,21 @@ class EntryService {
     $entry->setCreatedAt(time());
     $entry->setUpdatedAt(time());
 
-    return $this->mapper->insert($entry);
+    $created = $this->mapper->insert($entry);
+    $this->monthlyBalanceService->markDirtyFromDate($userId, $workDate);
+    return $created;
+  }
+
+  public function upsertCommentOnly(string $userId, string $workDate, string $comment): Entry {
+    $entry = $this->mapper->upsertCommentOnly($userId, $workDate, $comment);
+    $this->monthlyBalanceService->markDirtyFromDate($userId, $workDate);
+    return $entry;
   }
 
   public function update(int $id, array $data, bool $isHr = false): Entry {
     /** @var Entry $entry */
     $entry = $this->mapper->findById($id);
+    $oldWorkDate = (string)$entry->getWorkDate();
 
     $currentUser = $this->userSession->getUser()->getUID();
     if (!$isHr && $entry->getUserId() !== $currentUser) {
@@ -61,7 +71,13 @@ class EntryService {
       }
     }
     $entry->setUpdatedAt(time());
-    return $this->mapper->update($entry);
+
+    $updated = $this->mapper->update($entry);
+    $newWorkDate = (string)$updated->getWorkDate();
+    $dirtyFrom = ($newWorkDate !== '' && $newWorkDate < $oldWorkDate) ? $newWorkDate : $oldWorkDate;
+    $this->monthlyBalanceService->markDirtyFromDate($updated->getUserId(), $dirtyFrom);
+
+    return $updated;
   }
 
   public function delete(int $id, bool $isHr = false): void {
@@ -71,6 +87,10 @@ class EntryService {
     if (!$isHr && $entry->getUserId() !== $currentUser) {
       throw new \RuntimeException('Not allowed');
     }
+
+    $userId = $entry->getUserId();
+    $workDate = (string)$entry->getWorkDate();
     $this->mapper->delete($entry);
+    $this->monthlyBalanceService->markDirtyFromDate($userId, $workDate);
   }
 }

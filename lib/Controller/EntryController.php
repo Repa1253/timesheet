@@ -95,7 +95,7 @@ class EntryController extends Controller {
     $hasEnd = ($endMin !== null);
 
     if ($commentOnly || (!$hasStart && !$hasEnd && $commentTrim !== '')) {
-      $entry = $this->entryMapper->upsertCommentOnly($targetUid, $workDate, $commentTrim);
+      $entry = $this->service->upsertCommentOnly($targetUid, $workDate, $commentTrim);
       return new DataResponse($entry);
     }
 
